@@ -1,0 +1,5 @@
+/**
+ * EditProfileのエクスポート
+ */
+
+export * from "./EditProfile";
