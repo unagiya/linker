@@ -48,7 +48,7 @@
   - **プロパティ15: 不正データのエラーハンドリング**
   - **検証: 要件 5.3, 5.4**
 
-- [ ] 4. ProfileContextの実装
+- [x] 4. ProfileContextの実装
   - ProfileContextとProfileProviderの作成
   - useReducerを使用した状態管理
   - Repository依存性注入の実装
@@ -62,7 +62,7 @@
   - エラーハンドリングのテスト
   - _要件: 1.2, 3.2, 8.2_
 
-- [ ] 5. 共通UIコンポーネントの実装
+- [x] 5. 共通UIコンポーネントの実装
   - Buttonコンポーネント
   - Inputコンポーネント
   - TextAreaコンポーネント
