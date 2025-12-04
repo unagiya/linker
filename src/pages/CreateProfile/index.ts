@@ -1,0 +1,5 @@
+/**
+ * CreateProfileのエクスポート
+ */
+
+export * from "./CreateProfile";
