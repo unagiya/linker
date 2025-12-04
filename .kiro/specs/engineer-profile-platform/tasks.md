@@ -7,7 +7,7 @@
   - ESLintとPrettierの設定
   - _要件: すべての要件の基盤_
 
-- [ ] 2. 型定義とバリデーションスキーマの実装
+- [x] 2. 型定義とバリデーションスキーマの実装
   - Profile、SocialLink、ProfileFormData型の定義
   - PredefinedService enumの定義
   - Zodバリデーションスキーマの実装（profileSchema, socialLinkSchema）
@@ -28,7 +28,7 @@
   - **プロパティ6: 経験年数の数値バリデーション**
   - **検証: 要件 2.7**
 
-- [ ] 3. Repository層の実装
+- [x] 3. Repository層の実装
   - ProfileRepositoryインターフェースの定義
   - LocalStorageRepositoryの実装（save, findById, findAll, delete, exists）
   - エラーハンドリングの実装
