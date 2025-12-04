@@ -1,0 +1,5 @@
+/**
+ * ViewProfileのエクスポート
+ */
+
+export * from "./ViewProfile";
