@@ -1,0 +1,215 @@
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.profile-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.profile-form-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.profile-form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.profile-form-select {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+  width: 100%;
+  background-color: white;
+}
+
+.profile-form-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.profile-form-select:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* スキル入力 */
+.profile-form-skill-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.profile-form-skill-input > :first-child {
+  flex: 1;
+}
+
+.profile-form-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.profile-form-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.profile-form-tag-remove {
+  background: none;
+  border: none;
+  color: #1e40af;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s ease;
+}
+
+.profile-form-tag-remove:hover:not(:disabled) {
+  background-color: rgba(30, 64, 175, 0.1);
+}
+
+.profile-form-tag-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* SNSリンク入力 */
+.profile-form-social-input {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.profile-form-social-service {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-form-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-form-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+}
+
+.profile-form-link-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-form-link-service {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.profile-form-link-url {
+  color: #6b7280;
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-form-link-remove {
+  padding: 0.5rem 1rem;
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.profile-form-link-remove:hover:not(:disabled) {
+  background-color: #fecaca;
+}
+
+.profile-form-link-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* エラーメッセージ */
+.profile-form-error {
+  font-size: 0.875rem;
+  color: #ef4444;
+  display: block;
+}
+
+/* アクションボタン */
+.profile-form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+}
+
+/* レスポンシブ */
+@media (max-width: 640px) {
+  .profile-form-section {
+    padding: 1rem;
+  }
+
+  .profile-form-skill-input {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .profile-form-actions button {
+    width: 100%;
+  }
+}
