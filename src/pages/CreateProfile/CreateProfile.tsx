@@ -1,53 +1,50 @@
 /**
- * CreateProfileページ
  * プロフィール作成ページ
  */
 
 import { useNavigate } from "react-router-dom";
-import { useProfileContext } from "../../contexts/ProfileContext";
-import { ProfileForm } from "../../components/ProfileForm";
-import type { ProfileFormData } from "../../types";
-import { ErrorMessage } from "../../components/common";
-import "./CreateProfile.css";
+import { useAuth } from "../../contexts/AuthContext/AuthContext";
+import { useProfile } from "../../contexts/ProfileContext/ProfileContext";
+import { ProfileForm } from "../../components/ProfileForm/ProfileForm";
+import type { ProfileFormData } from "../../types/profile";
 
 export function CreateProfile() {
   const navigate = useNavigate();
-  const { createProfile, loading, error, clearError } = useProfileContext();
+  const { user } = useAuth();
+  const { createProfile, loading, error } = useProfile();
 
+  /**
+   * プロフィール作成処理
+   */
   const handleSubmit = async (data: ProfileFormData) => {
+    if (!user) {
+      console.error("ユーザーが認証されていません");
+      return;
+    }
+
     try {
-      const profile = await createProfile(data);
+      const profile = await createProfile(user.id, data);
       // 作成成功時、プロフィール詳細ページにリダイレクト
       navigate(`/profile/${profile.id}`);
-    } catch (err) {
-      console.error("プロフィール作成エラー:", err);
+    } catch (error) {
+      // エラーはProfileContextで管理されるため、ここでは何もしない
+      console.error("プロフィール作成エラー:", error);
     }
   };
 
+  /**
+   * キャンセル処理
+   */
   const handleCancel = () => {
     navigate("/");
   };
 
   return (
-    <div className="create-profile">
-      <div className="create-profile-container">
-        <header className="create-profile-header">
-          <h1 className="create-profile-title">プロフィール作成</h1>
-          <p className="create-profile-description">
-            あなたのプロフィールを作成して、他のエンジニアとつながりましょう
-          </p>
-        </header>
-
-        {error && (
-          <ErrorMessage message={error} onClose={clearError} />
-        )}
-
-        <ProfileForm
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-          isSubmitting={loading}
-        />
-      </div>
-    </div>
+    <ProfileForm
+      onSubmit={handleSubmit}
+      onCancel={handleCancel}
+      loading={loading}
+      error={error}
+    />
   );
 }

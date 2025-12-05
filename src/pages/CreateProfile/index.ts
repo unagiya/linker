@@ -1,5 +1,5 @@
 /**
- * CreateProfileのエクスポート
+ * CreateProfileページのエクスポート
  */
 
-export * from "./CreateProfile";
+export { CreateProfile } from "./CreateProfile";

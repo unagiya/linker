@@ -1,266 +1,280 @@
 /**
- * プロフィール作成機能のプロパティベーステスト
+ * CreateProfileページのプロパティベーステスト
  */
 
-import { describe, it, beforeEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import * as fc from "fast-check";
-import { render as _render, renderHook, waitFor } from "@testing-library/react";
-import { MemoryRouter as _MemoryRouter, Routes as _Routes, Route as _Route, useLocation as _useLocation } from "react-router-dom";
-import { ProfileProvider, useProfileContext } from "../../contexts/ProfileContext";
-import { LocalStorageRepository } from "../../repositories";
-import type { ProfileFormData } from "../../types";
-import type { ReactNode } from "react";
-import { CreateProfile as _CreateProfile } from "./CreateProfile";
+import { CreateProfile } from "./CreateProfile";
+import type { User } from "../../types/auth";
 
-/**
- * Feature: engineer-profile-platform, Property 1: 有効なプロフィール作成の永続化
- * 検証: 要件 1.2
- *
- * 任意の有効なプロフィールデータ（名前と職種が非空）に対して、プロフィールを作成すると、
- * ローカルストレージに保存され、同じIDで読み込むと同等のデータが取得できる
- */
-describe("Property 1: 有効なプロフィール作成の永続化", () => {
-  let repository: LocalStorageRepository;
+// useAuthとuseProfileをモック
+vi.mock("../../contexts/AuthContext/AuthContext", () => ({
+  useAuth: vi.fn(),
+}));
 
-  beforeEach(async () => {
-    repository = new LocalStorageRepository();
-    await repository.clear();
-  });
+vi.mock("../../contexts/ProfileContext/ProfileContext", () => ({
+  useProfile: vi.fn(),
+}));
 
-  // 有効なプロフィールフォームデータのジェネレーター
-  const validProfileFormDataArbitrary = fc.record({
-    name: fc
-      .string({ minLength: 1, maxLength: 100 })
-      .filter((s) => s.trim().length > 0), // 空白のみの文字列を除外
-    jobTitle: fc
-      .string({ minLength: 1, maxLength: 100 })
-      .filter((s) => s.trim().length > 0), // 空白のみの文字列を除外
-    bio: fc.option(fc.string({ maxLength: 500 }), { nil: "" }),
-    skills: fc.array(fc.string({ minLength: 1, maxLength: 50 }), {
-      maxLength: 20,
-    }),
-    yearsOfExperience: fc
-      .option(fc.integer({ min: 0, max: 100 }), { nil: undefined })
-      .map((years) => (years !== undefined ? years.toString() : "")),
-    socialLinks: fc.array(
-      fc.record({
-        service: fc.string({ minLength: 1, maxLength: 50 }),
-        url: fc.webUrl({ validSchemes: ["http", "https"] }),
-      }),
-      { maxLength: 10 }
-    ),
-  }) as fc.Arbitrary<ProfileFormData>;
-
-  it("有効なプロフィールデータを作成すると、ローカルストレージに保存される", async () => {
-    await fc.assert(
-      fc.asyncProperty(validProfileFormDataArbitrary, async (formData) => {
-        // 各反復の前にクリア
-        await repository.clear();
-
-        // ProfileProviderをラップするwrapper
-        const wrapper = ({ children }: { children: ReactNode }) => (
-          <ProfileProvider repository={repository}>{children}</ProfileProvider>
-        );
-
-        // useProfileContextフックをレンダリング
-        const { result } = renderHook(() => useProfileContext(), { wrapper });
-
-        // プロフィールを作成
-        let createdProfile;
-        await waitFor(async () => {
-          createdProfile = await result.current.createProfile(formData);
-        });
-
-        if (!createdProfile) return false;
-
-        // ローカルストレージから読み込み
-        const loadedProfile = await repository.findById(createdProfile.id);
-
-        // 同等のデータが取得できる
-        if (!loadedProfile) return false;
-
-        // 基本フィールドの検証
-        const nameMatches = loadedProfile.name === formData.name;
-        const jobTitleMatches = loadedProfile.jobTitle === formData.jobTitle;
-
-        // bioの検証（空文字列の場合はundefinedになる）
-        const bioMatches =
-          formData.bio === ""
-            ? loadedProfile.bio === undefined
-            : loadedProfile.bio === formData.bio;
-
-        // スキルの検証
-        const skillsMatch =
-          JSON.stringify(loadedProfile.skills) ===
-          JSON.stringify(formData.skills);
-
-        // 経験年数の検証
-        const expectedYears =
-          formData.yearsOfExperience === ""
-            ? undefined
-            : parseInt(formData.yearsOfExperience, 10);
-        const yearsMatch = loadedProfile.yearsOfExperience === expectedYears;
-
-        // SNSリンクの検証（IDは除外して比較）
-        const socialLinksMatch =
-          loadedProfile.socialLinks.length === formData.socialLinks.length &&
-          loadedProfile.socialLinks.every((link, index) => {
-            const formLink = formData.socialLinks[index];
-            return link.service === formLink.service && link.url === formLink.url;
-          });
-
-        return (
-          nameMatches &&
-          jobTitleMatches &&
-          bioMatches &&
-          skillsMatch &&
-          yearsMatch &&
-          socialLinksMatch
-        );
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  it("作成されたプロフィールは一意のIDを持つ", async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.array(validProfileFormDataArbitrary, { minLength: 2, maxLength: 5 }),
-        async (formDataArray) => {
-          // 各反復の前にクリア
-          await repository.clear();
-
-          const createdIds: string[] = [];
-
-          // ProfileProviderをラップするwrapper
-          const wrapper = ({ children }: { children: ReactNode }) => (
-            <ProfileProvider repository={repository}>{children}</ProfileProvider>
-          );
-
-          // 複数のプロフィールを作成
-          for (const formData of formDataArray) {
-            const { result } = renderHook(() => useProfileContext(), { wrapper });
-
-            let createdProfile;
-            await waitFor(async () => {
-              createdProfile = await result.current.createProfile(formData);
-            });
-
-            if (createdProfile) {
-              createdIds.push(createdProfile.id);
-            }
-          }
-
-          // すべてのIDが一意であることを確認
-          const uniqueIds = new Set(createdIds);
-          return uniqueIds.size === createdIds.length;
-        }
-      ),
-      { numRuns: 20 }
-    );
-  });
+// 各テスト後にクリーンアップ
+afterEach(() => {
+  cleanup();
 });
 
-/**
- * Feature: engineer-profile-platform, Property 3: プロフィール作成後のリダイレクト
- * 検証: 要件 1.4
- *
- * 任意の有効なプロフィールデータに対して、プロフィールが正常に作成されると、
- * 作成されたプロフィールのIDを含むURLにリダイレクトされる
- */
-describe("Property 3: プロフィール作成後のリダイレクト", () => {
-  let repository: LocalStorageRepository;
+describe("CreateProfile - Property Based Tests", () => {
+  /**
+   * Feature: engineer-profile-platform, Property 11: 認証済みユーザーのプロフィール作成ページへのアクセス
+   * 任意のログイン済みユーザーに対して、プロフィール作成ページにアクセスすると、
+   * プロフィール入力フォームが表示される
+   * Validates: Requirements 3.2
+   */
+  describe("Property 11: 認証済みユーザーのプロフィール作成ページへのアクセス", () => {
+    it("任意のログイン済みユーザーがアクセスすると、プロフィール入力フォームが表示される", async () => {
+      const { useAuth } = await import("../../contexts/AuthContext/AuthContext");
+      const { useProfile } = await import("../../contexts/ProfileContext/ProfileContext");
 
-  beforeEach(async () => {
-    repository = new LocalStorageRepository();
-    await repository.clear();
+      fc.assert(
+        fc.property(
+          fc.uuid(), // ユーザーID
+          fc.emailAddress(), // メールアドレス
+          (userId, email) => {
+            cleanup(); // 各反復前にクリーンアップ
+
+            // モックユーザー
+            const mockUser: User = {
+              id: userId,
+              email,
+              app_metadata: {},
+              user_metadata: {},
+              aud: "authenticated",
+              created_at: new Date().toISOString(),
+            };
+
+            // useAuthのモック
+            vi.mocked(useAuth).mockReturnValue({
+              user: mockUser,
+              session: null,
+              loading: false,
+              error: null,
+              signUp: vi.fn(),
+              signIn: vi.fn(),
+              signOut: vi.fn(),
+              clearError: vi.fn(),
+            });
+
+            // useProfileのモック
+            vi.mocked(useProfile).mockReturnValue({
+              profile: null,
+              loading: false,
+              error: null,
+              createProfile: vi.fn(),
+              updateProfile: vi.fn(),
+              deleteProfile: vi.fn(),
+              loadProfile: vi.fn(),
+              loadMyProfile: vi.fn(),
+              clearError: vi.fn(),
+            });
+
+            render(
+              <MemoryRouter>
+                <CreateProfile />
+              </MemoryRouter>
+            );
+
+            // プロフィール入力フォームが表示されることを確認
+            expect(screen.getByText("プロフィール作成")).toBeInTheDocument();
+            expect(screen.getByLabelText(/名前/)).toBeInTheDocument();
+            expect(screen.getByLabelText(/職種/)).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
   });
 
-  // 有効なプロフィールフォームデータのジェネレーター
-  const validProfileFormDataArbitrary = fc.record({
-    name: fc
-      .string({ minLength: 1, maxLength: 100 })
-      .filter((s) => s.trim().length > 0),
-    jobTitle: fc
-      .string({ minLength: 1, maxLength: 100 })
-      .filter((s) => s.trim().length > 0),
-    bio: fc.option(fc.string({ maxLength: 500 }), { nil: "" }),
-    skills: fc.array(fc.string({ minLength: 1, maxLength: 50 }), {
-      maxLength: 20,
-    }),
-    yearsOfExperience: fc
-      .option(fc.integer({ min: 0, max: 100 }), { nil: undefined })
-      .map((years) => (years !== undefined ? years.toString() : "")),
-    socialLinks: fc.array(
-      fc.record({
-        service: fc.string({ minLength: 1, maxLength: 50 }),
-        url: fc.webUrl({ validSchemes: ["http", "https"] }),
-      }),
-      { maxLength: 10 }
-    ),
-  }) as fc.Arbitrary<ProfileFormData>;
+  /**
+   * Feature: engineer-profile-platform, Property 12: 有効なプロフィールデータの保存
+   * 任意の有効なプロフィールデータ（名前と職種が非空）に対して、
+   * プロフィールを作成すると、Supabaseデータベースに保存される
+   * Validates: Requirements 3.3
+   */
+  describe("Property 12: 有効なプロフィールデータの保存", () => {
+    it("任意の有効なプロフィールデータでフォームを送信すると、createProfileが呼ばれる", async () => {
+      const { useAuth } = await import("../../contexts/AuthContext/AuthContext");
+      const { useProfile } = await import("../../contexts/ProfileContext/ProfileContext");
+      const { fireEvent, waitFor } = await import("@testing-library/react");
 
-  it("有効なプロフィールを作成すると、プロフィールIDを含むURLにリダイレクトされる", async () => {
-    await fc.assert(
-      fc.asyncProperty(validProfileFormDataArbitrary, async (formData) => {
-        // 各反復の前にクリア
-        await repository.clear();
+      fc.assert(
+        fc.asyncProperty(
+          fc.uuid(), // ユーザーID
+          fc.emailAddress(), // メールアドレス
+          fc.string({ minLength: 1, maxLength: 100 }), // 名前
+          fc.string({ minLength: 1, maxLength: 100 }), // 職種
+          async (userId, email, name, jobTitle) => {
+            cleanup(); // 各反復前にクリーンアップ
 
-        // ナビゲーション履歴を追跡
-        let navigatedTo: string | null = null;
+            const mockUser: User = {
+              id: userId,
+              email,
+              app_metadata: {},
+              user_metadata: {},
+              aud: "authenticated",
+              created_at: new Date().toISOString(),
+            };
 
-        // モックナビゲート関数
-        const mockNavigate = (path: string) => {
-          navigatedTo = path;
-        };
+            const mockCreateProfile = vi.fn().mockResolvedValue({
+              id: "profile-id",
+              user_id: userId,
+              name,
+              jobTitle,
+              skills: [],
+              socialLinks: [],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
 
-        // ProfileProviderをラップするwrapper
-        const wrapper = ({ children }: { children: ReactNode }) => (
-          <ProfileProvider repository={repository}>{children}</ProfileProvider>
-        );
+            vi.mocked(useAuth).mockReturnValue({
+              user: mockUser,
+              session: null,
+              loading: false,
+              error: null,
+              signUp: vi.fn(),
+              signIn: vi.fn(),
+              signOut: vi.fn(),
+              clearError: vi.fn(),
+            });
 
-        // useProfileContextフックをレンダリング
-        const { result } = renderHook(() => useProfileContext(), { wrapper });
+            vi.mocked(useProfile).mockReturnValue({
+              profile: null,
+              loading: false,
+              error: null,
+              createProfile: mockCreateProfile,
+              updateProfile: vi.fn(),
+              deleteProfile: vi.fn(),
+              loadProfile: vi.fn(),
+              loadMyProfile: vi.fn(),
+              clearError: vi.fn(),
+            });
 
-        // プロフィールを作成
-        let createdProfile;
-        await waitFor(async () => {
-          createdProfile = await result.current.createProfile(formData);
-        });
+            render(
+              <MemoryRouter>
+                <CreateProfile />
+              </MemoryRouter>
+            );
 
-        if (!createdProfile) {
-          return false;
-        }
+            // フォームに入力
+            const nameInput = screen.getByLabelText(/名前/);
+            const jobTitleInput = screen.getByLabelText(/職種/);
+            const submitButton = screen.getByRole("button", { name: "保存" });
 
-        // CreateProfileコンポーネントのhandleSubmitロジックをシミュレート
-        // 実際のコンポーネントでは navigate(`/profile/${profile.id}`) が呼ばれる
-        mockNavigate(`/profile/${createdProfile.id}`);
+            fireEvent.change(nameInput, { target: { value: name } });
+            fireEvent.change(jobTitleInput, { target: { value: jobTitle } });
+            fireEvent.click(submitButton);
 
-        // リダイレクト先のURLが正しい形式であることを確認
-        if (!navigatedTo) {
-          return false;
-        }
+            // createProfileが呼ばれることを確認
+            await waitFor(() => {
+              expect(mockCreateProfile).toHaveBeenCalledWith(
+                userId,
+                expect.objectContaining({
+                  name,
+                  jobTitle,
+                })
+              );
+            });
+          }
+        ),
+        { numRuns: 50 }
+      );
+    });
+  });
 
-        const isCorrectFormat = /^\/profile\/[a-f0-9-]+$/.test(navigatedTo);
+  /**
+   * Feature: engineer-profile-platform, Property 13: プロフィールと所有者の紐付け
+   * 任意のプロフィール作成に対して、ログイン中のユーザーIDがプロフィールの所有者として記録される
+   * Validates: Requirements 3.4, 11.1
+   */
+  describe("Property 13: プロフィールと所有者の紐付け", () => {
+    it("プロフィール作成時、ログイン中のユーザーIDが渡される", async () => {
+      const { useAuth } = await import("../../contexts/AuthContext/AuthContext");
+      const { useProfile } = await import("../../contexts/ProfileContext/ProfileContext");
+      const { fireEvent, waitFor } = await import("@testing-library/react");
 
-        if (!isCorrectFormat) {
-          return false;
-        }
+      fc.assert(
+        fc.asyncProperty(
+          fc.uuid(), // ユーザーID
+          fc.emailAddress(), // メールアドレス
+          async (userId, email) => {
+            cleanup(); // 各反復前にクリーンアップ
 
-        // リダイレクト先のプロフィールIDを取得
-        const profileId = navigatedTo.replace("/profile/", "");
+            const mockUser: User = {
+              id: userId,
+              email,
+              app_metadata: {},
+              user_metadata: {},
+              aud: "authenticated",
+              created_at: new Date().toISOString(),
+            };
 
-        // 作成されたプロフィールのIDと一致することを確認
-        if (profileId !== createdProfile.id) {
-          return false;
-        }
+            const mockCreateProfile = vi.fn().mockResolvedValue({
+              id: "profile-id",
+              user_id: userId,
+              name: "テスト",
+              jobTitle: "エンジニア",
+              skills: [],
+              socialLinks: [],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            });
 
-        // そのIDでプロフィールが実際に保存されているか確認
-        const savedProfile = await repository.findById(profileId);
+            vi.mocked(useAuth).mockReturnValue({
+              user: mockUser,
+              session: null,
+              loading: false,
+              error: null,
+              signUp: vi.fn(),
+              signIn: vi.fn(),
+              signOut: vi.fn(),
+              clearError: vi.fn(),
+            });
 
-        return savedProfile !== null;
-      }),
-      { numRuns: 100 }
-    );
+            vi.mocked(useProfile).mockReturnValue({
+              profile: null,
+              loading: false,
+              error: null,
+              createProfile: mockCreateProfile,
+              updateProfile: vi.fn(),
+              deleteProfile: vi.fn(),
+              loadProfile: vi.fn(),
+              loadMyProfile: vi.fn(),
+              clearError: vi.fn(),
+            });
+
+            render(
+              <MemoryRouter>
+                <CreateProfile />
+              </MemoryRouter>
+            );
+
+            // フォームに入力して送信
+            const nameInput = screen.getByLabelText(/名前/);
+            const jobTitleInput = screen.getByLabelText(/職種/);
+            const submitButton = screen.getByRole("button", { name: "保存" });
+
+            fireEvent.change(nameInput, { target: { value: "テスト" } });
+            fireEvent.change(jobTitleInput, { target: { value: "エンジニア" } });
+            fireEvent.click(submitButton);
+
+            // createProfileが正しいユーザーIDで呼ばれることを確認
+            await waitFor(() => {
+              expect(mockCreateProfile).toHaveBeenCalledWith(userId, expect.any(Object));
+            });
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
   });
 });
