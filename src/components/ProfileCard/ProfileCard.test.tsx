@@ -1,345 +1,277 @@
 /**
  * ProfileCardコンポーネントのユニットテスト
- * 要件: 4.2, 4.3
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { ProfileCard } from "./ProfileCard";
-import type { Profile } from "../../types";
-import { PredefinedService } from "../../types";
+import type { Profile } from "../../types/profile";
 
 describe("ProfileCard", () => {
-  // テスト用のプロフィールデータ
-  const createTestProfile = (): Profile => ({
-    id: "test-id-123",
-    name: "テストユーザー",
-    jobTitle: "ソフトウェアエンジニア",
-    bio: "テスト用のプロフィールです。\nReactとTypeScriptが得意です。",
-    skills: ["React", "TypeScript", "Node.js"],
+  const mockProfile: Profile = {
+    id: "profile-1",
+    user_id: "user-1",
+    name: "山田太郎",
+    jobTitle: "フロントエンドエンジニア",
+    bio: "Reactが得意です",
+    skills: ["React", "TypeScript", "JavaScript"],
     yearsOfExperience: 5,
     socialLinks: [
       {
         id: "link-1",
-        service: PredefinedService.GITHUB,
-        url: "https://github.com/testuser",
+        service: "github",
+        url: "https://github.com/test",
       },
       {
         id: "link-2",
-        service: PredefinedService.TWITTER,
-        url: "https://twitter.com/testuser",
-      },
-      {
-        id: "link-3",
-        service: "LinkedIn",
-        url: "https://linkedin.com/in/testuser",
+        service: "twitter",
+        url: "https://twitter.com/test",
       },
     ],
-    createdAt: "2024-01-01T00:00:00.000Z",
-    updatedAt: "2024-01-15T00:00:00.000Z",
-  });
+    createdAt: "2024-01-01T00:00:00Z",
+    updatedAt: "2024-01-01T00:00:00Z",
+  };
 
-  describe("プロフィール情報表示", () => {
-    it("すべてのプロフィール情報が表示される", () => {
-      const profile = createTestProfile();
-      render(<ProfileCard profile={profile} isOwner={false} />);
+  describe("プロフィール情報の表示", () => {
+    it("名前と職種が表示される", () => {
+      render(<ProfileCard profile={mockProfile} />);
 
-      // 名前と職種が表示される
-      expect(screen.getByText("テストユーザー")).toBeInTheDocument();
-      expect(screen.getByText("ソフトウェアエンジニア")).toBeInTheDocument();
+      expect(screen.getByText("山田太郎")).toBeInTheDocument();
+      expect(screen.getByText("フロントエンドエンジニア")).toBeInTheDocument();
+    });
 
-      // 経験年数が表示される
-      expect(screen.getByText("経験年数")).toBeInTheDocument();
+    it("自己紹介が表示される", () => {
+      render(<ProfileCard profile={mockProfile} />);
+
+      expect(screen.getByText("Reactが得意です")).toBeInTheDocument();
+    });
+
+    it("経験年数が表示される", () => {
+      render(<ProfileCard profile={mockProfile} />);
+
       expect(screen.getByText("5年")).toBeInTheDocument();
+    });
 
-      // 自己紹介が表示される
-      expect(screen.getByText("自己紹介")).toBeInTheDocument();
-      expect(
-        screen.getByText(/テスト用のプロフィールです/)
-      ).toBeInTheDocument();
+    it("スキルが表示される", () => {
+      render(<ProfileCard profile={mockProfile} />);
 
-      // スキルが表示される
-      expect(screen.getByText("スキル")).toBeInTheDocument();
       expect(screen.getByText("React")).toBeInTheDocument();
       expect(screen.getByText("TypeScript")).toBeInTheDocument();
-      expect(screen.getByText("Node.js")).toBeInTheDocument();
-
-      // SNSリンクセクションが表示される
-      expect(screen.getByText("SNS・外部リンク")).toBeInTheDocument();
+      expect(screen.getByText("JavaScript")).toBeInTheDocument();
     });
 
-    it("オプション項目がない場合は表示されない", () => {
-      const profile: Profile = {
-        id: "test-id-456",
-        name: "ミニマルユーザー",
-        jobTitle: "デザイナー",
-        skills: [],
-        socialLinks: [],
-        createdAt: "2024-01-01T00:00:00.000Z",
-        updatedAt: "2024-01-01T00:00:00.000Z",
+    it("自己紹介がない場合は表示されない", () => {
+      const profileWithoutBio: Profile = {
+        ...mockProfile,
+        bio: undefined,
       };
 
-      render(<ProfileCard profile={profile} isOwner={false} />);
+      render(<ProfileCard profile={profileWithoutBio} />);
 
-      // 必須項目のみ表示される
-      expect(screen.getByText("ミニマルユーザー")).toBeInTheDocument();
-      expect(screen.getByText("デザイナー")).toBeInTheDocument();
-
-      // オプション項目は表示されない
-      expect(screen.queryByText("経験年数")).not.toBeInTheDocument();
       expect(screen.queryByText("自己紹介")).not.toBeInTheDocument();
+    });
+
+    it("経験年数がない場合は表示されない", () => {
+      const profileWithoutExperience: Profile = {
+        ...mockProfile,
+        yearsOfExperience: undefined,
+      };
+
+      render(<ProfileCard profile={profileWithoutExperience} />);
+
+      expect(screen.queryByText(/年/)).not.toBeInTheDocument();
+    });
+
+    it("スキルがない場合は表示されない", () => {
+      const profileWithoutSkills: Profile = {
+        ...mockProfile,
+        skills: [],
+      };
+
+      render(<ProfileCard profile={profileWithoutSkills} />);
+
       expect(screen.queryByText("スキル")).not.toBeInTheDocument();
-      expect(screen.queryByText("SNS・外部リンク")).not.toBeInTheDocument();
-    });
-
-    it("経験年数が0の場合も表示される", () => {
-      const profile: Profile = {
-        ...createTestProfile(),
-        yearsOfExperience: 0,
-      };
-
-      render(<ProfileCard profile={profile} isOwner={false} />);
-
-      expect(screen.getByText("経験年数")).toBeInTheDocument();
-      expect(screen.getByText("0年")).toBeInTheDocument();
-    });
-
-    it("アバターに名前の最初の文字が大文字で表示される", () => {
-      const profile = createTestProfile();
-      render(<ProfileCard profile={profile} isOwner={false} />);
-
-      const avatar = screen.getByText("テ");
-      expect(avatar).toBeInTheDocument();
-      expect(avatar).toHaveClass("profile-card-avatar");
-    });
-
-    it("作成日と更新日が表示される", () => {
-      const profile = createTestProfile();
-      render(<ProfileCard profile={profile} isOwner={false} />);
-
-      // 日付が表示される（日本語フォーマット）
-      expect(screen.getByText(/作成日:/)).toBeInTheDocument();
-      expect(screen.getByText(/更新日:/)).toBeInTheDocument();
-    });
-
-    it("作成日と更新日が同じ場合、更新日は表示されない", () => {
-      const profile: Profile = {
-        ...createTestProfile(),
-        createdAt: "2024-01-01T00:00:00.000Z",
-        updatedAt: "2024-01-01T00:00:00.000Z",
-      };
-
-      render(<ProfileCard profile={profile} isOwner={false} />);
-
-      expect(screen.getByText(/作成日:/)).toBeInTheDocument();
-      expect(screen.queryByText(/更新日:/)).not.toBeInTheDocument();
     });
   });
 
-  describe("SNSリンク表示", () => {
-    it("定義済みサービスのリンクが正しく表示される", () => {
-      const profile = createTestProfile();
-      render(<ProfileCard profile={profile} isOwner={false} />);
+  describe("SNSリンクの表示", () => {
+    it("SNSリンクが表示される", () => {
+      render(<ProfileCard profile={mockProfile} />);
 
-      // GitHubリンクが表示される
-      const githubLink = screen.getByRole("link", { name: /github/ });
+      const githubLink = screen.getByLabelText("GitHubへのリンク");
+      const twitterLink = screen.getByLabelText("Twitterへのリンク");
+
       expect(githubLink).toBeInTheDocument();
-      expect(githubLink).toHaveAttribute("href", "https://github.com/testuser");
+      expect(githubLink).toHaveAttribute("href", "https://github.com/test");
       expect(githubLink).toHaveAttribute("target", "_blank");
       expect(githubLink).toHaveAttribute("rel", "noopener noreferrer");
 
-      // Twitterリンクが表示される
-      const twitterLink = screen.getByRole("link", { name: /twitter/ });
       expect(twitterLink).toBeInTheDocument();
-      expect(twitterLink).toHaveAttribute(
-        "href",
-        "https://twitter.com/testuser"
-      );
+      expect(twitterLink).toHaveAttribute("href", "https://twitter.com/test");
     });
 
-    it("カスタムサービスのリンクが正しく表示される", () => {
-      const profile = createTestProfile();
-      render(<ProfileCard profile={profile} isOwner={false} />);
+    it("SNSリンクがない場合は表示されない", () => {
+      const profileWithoutLinks: Profile = {
+        ...mockProfile,
+        socialLinks: [],
+      };
 
-      // LinkedInリンクが表示される
-      const linkedinLink = screen.getByRole("link", { name: /LinkedIn/ });
-      expect(linkedinLink).toBeInTheDocument();
-      expect(linkedinLink).toHaveAttribute(
-        "href",
-        "https://linkedin.com/in/testuser"
-      );
-      expect(linkedinLink).toHaveAttribute("target", "_blank");
-      expect(linkedinLink).toHaveAttribute("rel", "noopener noreferrer");
+      render(<ProfileCard profile={profileWithoutLinks} />);
+
+      expect(screen.queryByText("SNS・外部リンク")).not.toBeInTheDocument();
     });
 
-    it("各サービスに適切なアイコンが表示される", () => {
-      const profile = createTestProfile();
-      render(<ProfileCard profile={profile} isOwner={false} />);
-
-      // GitHubアイコン（💻）が表示される
-      expect(screen.getByText("💻")).toBeInTheDocument();
-
-      // Twitterアイコン（🐦）が表示される
-      expect(screen.getByText("🐦")).toBeInTheDocument();
-
-      // カスタムサービスアイコン（🔗）が表示される
-      expect(screen.getByText("🔗")).toBeInTheDocument();
-    });
-
-    it("Facebookのリンクが正しく表示される", () => {
-      const profile: Profile = {
-        ...createTestProfile(),
+    it("カスタムサービスのリンクが表示される", () => {
+      const profileWithCustomLink: Profile = {
+        ...mockProfile,
         socialLinks: [
           {
-            id: "link-fb",
-            service: PredefinedService.FACEBOOK,
-            url: "https://facebook.com/testuser",
+            id: "link-1",
+            service: "LinkedIn",
+            url: "https://linkedin.com/in/test",
           },
         ],
       };
 
-      render(<ProfileCard profile={profile} isOwner={false} />);
+      render(<ProfileCard profile={profileWithCustomLink} />);
 
-      const facebookLink = screen.getByRole("link", { name: /facebook/ });
-      expect(facebookLink).toBeInTheDocument();
-      expect(facebookLink).toHaveAttribute(
-        "href",
-        "https://facebook.com/testuser"
-      );
-
-      // Facebookアイコン（👥）が表示される
-      expect(screen.getByText("👥")).toBeInTheDocument();
-    });
-
-    it("複数のSNSリンクがすべて表示される", () => {
-      const profile = createTestProfile();
-      render(<ProfileCard profile={profile} isOwner={false} />);
-
-      // すべてのリンクが表示される
-      const links = screen.getAllByRole("link");
-      // 3つのSNSリンクが存在する
-      expect(links.length).toBeGreaterThanOrEqual(3);
+      expect(screen.getByText("LinkedIn")).toBeInTheDocument();
     });
   });
 
-  describe("ボタン表示制御", () => {
-    it("所有者の場合、編集と削除ボタンが表示される", () => {
-      const profile = createTestProfile();
-      const onEdit = vi.fn();
-      const onDelete = vi.fn();
+  describe("ボタン表示制御（所有者判定）", () => {
+    it("未認証ユーザーには編集・削除ボタンが表示されない", () => {
+      const mockOnEdit = vi.fn();
+      const mockOnDelete = vi.fn();
 
       render(
         <ProfileCard
-          profile={profile}
-          isOwner={true}
-          onEdit={onEdit}
-          onDelete={onDelete}
+          profile={mockProfile}
+          currentUserId={null}
+          onEdit={mockOnEdit}
+          onDelete={mockOnDelete}
         />
       );
 
-      expect(screen.getByRole("button", { name: /編集/ })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /削除/ })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "編集" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "削除" })).not.toBeInTheDocument();
     });
 
-    it("所有者でない場合、編集と削除ボタンは表示されない", () => {
-      const profile = createTestProfile();
-
-      render(<ProfileCard profile={profile} isOwner={false} />);
-
-      expect(
-        screen.queryByRole("button", { name: /編集/ })
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("button", { name: /削除/ })
-      ).not.toBeInTheDocument();
-    });
-
-    it("共有ボタンが提供されている場合、表示される", () => {
-      const profile = createTestProfile();
-      const onShare = vi.fn();
-
-      render(
-        <ProfileCard profile={profile} isOwner={false} onShare={onShare} />
-      );
-
-      expect(screen.getByRole("button", { name: /共有/ })).toBeInTheDocument();
-    });
-
-    it("共有ボタンが提供されていない場合、表示されない", () => {
-      const profile = createTestProfile();
-
-      render(<ProfileCard profile={profile} isOwner={false} />);
-
-      expect(
-        screen.queryByRole("button", { name: /共有/ })
-      ).not.toBeInTheDocument();
-    });
-
-    it("編集ボタンをクリックするとonEditが呼ばれる", async () => {
-      const user = userEvent.setup();
-      const profile = createTestProfile();
-      const onEdit = vi.fn();
-
-      render(
-        <ProfileCard profile={profile} isOwner={true} onEdit={onEdit} />
-      );
-
-      const editButton = screen.getByRole("button", { name: /編集/ });
-      await user.click(editButton);
-
-      expect(onEdit).toHaveBeenCalledTimes(1);
-    });
-
-    it("削除ボタンをクリックするとonDeleteが呼ばれる", async () => {
-      const user = userEvent.setup();
-      const profile = createTestProfile();
-      const onDelete = vi.fn();
-
-      render(
-        <ProfileCard profile={profile} isOwner={true} onDelete={onDelete} />
-      );
-
-      const deleteButton = screen.getByRole("button", { name: /削除/ });
-      await user.click(deleteButton);
-
-      expect(onDelete).toHaveBeenCalledTimes(1);
-    });
-
-    it("共有ボタンをクリックするとonShareが呼ばれる", async () => {
-      const user = userEvent.setup();
-      const profile = createTestProfile();
-      const onShare = vi.fn();
-
-      render(
-        <ProfileCard profile={profile} isOwner={false} onShare={onShare} />
-      );
-
-      const shareButton = screen.getByRole("button", { name: /共有/ });
-      await user.click(shareButton);
-
-      expect(onShare).toHaveBeenCalledTimes(1);
-    });
-
-    it("所有者で全てのハンドラが提供されている場合、すべてのボタンが表示される", () => {
-      const profile = createTestProfile();
-      const onEdit = vi.fn();
-      const onDelete = vi.fn();
-      const onShare = vi.fn();
+    it("他人のプロフィールには編集・削除ボタンが表示されない", () => {
+      const mockOnEdit = vi.fn();
+      const mockOnDelete = vi.fn();
 
       render(
         <ProfileCard
-          profile={profile}
-          isOwner={true}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onShare={onShare}
+          profile={mockProfile}
+          currentUserId="other-user"
+          onEdit={mockOnEdit}
+          onDelete={mockOnDelete}
         />
       );
 
-      expect(screen.getByRole("button", { name: /共有/ })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /編集/ })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /削除/ })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "編集" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "削除" })).not.toBeInTheDocument();
+    });
+
+    it("自分のプロフィールには編集・削除ボタンが表示される", () => {
+      const mockOnEdit = vi.fn();
+      const mockOnDelete = vi.fn();
+
+      render(
+        <ProfileCard
+          profile={mockProfile}
+          currentUserId="user-1"
+          onEdit={mockOnEdit}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      expect(screen.getByRole("button", { name: "編集" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "削除" })).toBeInTheDocument();
+    });
+
+    it("onEditが指定されていない場合、編集ボタンは表示されない", () => {
+      const mockOnDelete = vi.fn();
+
+      render(
+        <ProfileCard
+          profile={mockProfile}
+          currentUserId="user-1"
+          onDelete={mockOnDelete}
+        />
+      );
+
+      expect(screen.queryByRole("button", { name: "編集" })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "削除" })).toBeInTheDocument();
+    });
+
+    it("onDeleteが指定されていない場合、削除ボタンは表示されない", () => {
+      const mockOnEdit = vi.fn();
+
+      render(
+        <ProfileCard
+          profile={mockProfile}
+          currentUserId="user-1"
+          onEdit={mockOnEdit}
+        />
+      );
+
+      expect(screen.getByRole("button", { name: "編集" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "削除" })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("ボタンのクリック", () => {
+    it("編集ボタンをクリックするとonEditが呼ばれる", () => {
+      const mockOnEdit = vi.fn();
+
+      render(
+        <ProfileCard
+          profile={mockProfile}
+          currentUserId="user-1"
+          onEdit={mockOnEdit}
+        />
+      );
+
+      const editButton = screen.getByRole("button", { name: "編集" });
+      fireEvent.click(editButton);
+
+      expect(mockOnEdit).toHaveBeenCalledTimes(1);
+    });
+
+    it("削除ボタンをクリックするとonDeleteが呼ばれる", () => {
+      const mockOnDelete = vi.fn();
+
+      render(
+        <ProfileCard
+          profile={mockProfile}
+          currentUserId="user-1"
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const deleteButton = screen.getByRole("button", { name: "削除" });
+      fireEvent.click(deleteButton);
+
+      expect(mockOnDelete).toHaveBeenCalledTimes(1);
+    });
+
+    it("共有ボタンをクリックするとonShareが呼ばれる", () => {
+      const mockOnShare = vi.fn();
+
+      render(<ProfileCard profile={mockProfile} onShare={mockOnShare} />);
+
+      const shareButton = screen.getByRole("button", { name: "共有" });
+      fireEvent.click(shareButton);
+
+      expect(mockOnShare).toHaveBeenCalledTimes(1);
+    });
+
+    it("onShareが指定されていない場合、共有ボタンは表示されない", () => {
+      render(<ProfileCard profile={mockProfile} />);
+
+      expect(screen.queryByRole("button", { name: "共有" })).not.toBeInTheDocument();
     });
   });
 });

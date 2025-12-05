@@ -1,5 +1,1 @@
-/**
- * ProfileCardのエクスポート
- */
-
-export * from "./ProfileCard";
+export { ProfileCard } from "./ProfileCard";
