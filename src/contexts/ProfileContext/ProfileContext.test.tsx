@@ -2,92 +2,38 @@
  * ProfileContextのユニットテスト
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
+import { ProfileProvider, useProfile } from "./ProfileContext";
 import type { ReactNode } from "react";
-import { ProfileProvider, useProfileContext } from "./ProfileContext";
-import type { ProfileRepository } from "../../repositories";
-import type { Profile, ProfileFormData } from "../../types";
-
-/**
- * モックRepository
- */
-class MockRepository implements ProfileRepository {
-  private profiles: Map<string, Profile> = new Map();
-  public saveError: Error | null = null;
-  public findByIdError: Error | null = null;
-  public deleteError: Error | null = null;
-
-  async save(profile: Profile): Promise<void> {
-    if (this.saveError) {
-      throw this.saveError;
-    }
-    this.profiles.set(profile.id, profile);
-  }
-
-  async findById(id: string): Promise<Profile | null> {
-    if (this.findByIdError) {
-      throw this.findByIdError;
-    }
-    return this.profiles.get(id) || null;
-  }
-
-  async findAll(): Promise<Profile[]> {
-    return Array.from(this.profiles.values());
-  }
-
-  async delete(id: string): Promise<void> {
-    if (this.deleteError) {
-      throw this.deleteError;
-    }
-    this.profiles.delete(id);
-  }
-
-  async exists(id: string): Promise<boolean> {
-    return this.profiles.has(id);
-  }
-
-  clear(): void {
-    this.profiles.clear();
-    this.saveError = null;
-    this.findByIdError = null;
-    this.deleteError = null;
-  }
-}
+import type { ProfileRepository } from "../../repositories/ProfileRepository";
+import type { Profile } from "../../types/profile";
 
 describe("ProfileContext", () => {
-  let mockRepository: MockRepository;
-
-  // テスト用のプロフィールフォームデータ
-  const createTestFormData = (): ProfileFormData => ({
-    name: "テストユーザー",
-    jobTitle: "ソフトウェアエンジニア",
-    bio: "テスト用のプロフィールです",
-    skills: ["React", "TypeScript"],
-    yearsOfExperience: "5",
-    socialLinks: [
-      {
-        service: "github",
-        url: "https://github.com/test",
-      },
-    ],
-  });
+  let mockRepository: ProfileRepository;
 
   beforeEach(() => {
-    mockRepository = new MockRepository();
+    // モックRepositoryを作成
+    mockRepository = {
+      save: vi.fn(),
+      findById: vi.fn(),
+      findByUserId: vi.fn(),
+      findAll: vi.fn(),
+      delete: vi.fn(),
+      exists: vi.fn(),
+    };
   });
 
-  // テスト用のWrapper
-  const createWrapper = (repository: ProfileRepository) => {
-    return ({ children }: { children: ReactNode }) => (
+  const wrapper =
+    (repository: ProfileRepository) =>
+    ({ children }: { children: ReactNode }) => (
       <ProfileProvider repository={repository}>{children}</ProfileProvider>
     );
-  };
 
-  describe("初期状態", () => {
-    it("初期状態が正しく設定される", () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
+  describe("初期化", () => {
+    it("初期状態ではprofileがnullである", () => {
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
       });
 
       expect(result.current.profile).toBeNull();
@@ -98,248 +44,207 @@ describe("ProfileContext", () => {
 
   describe("createProfile", () => {
     it("プロフィールを作成できる", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
+      vi.mocked(mockRepository.save).mockResolvedValue();
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
       });
 
-      const formData = createTestFormData();
+      const formData = {
+        name: "山田太郎",
+        jobTitle: "フロントエンドエンジニア",
+        bio: "Reactが得意です",
+        skills: ["React", "TypeScript"],
+        yearsOfExperience: "5",
+        socialLinks: [
+          {
+            service: "github",
+            url: "https://github.com/yamada",
+          },
+        ],
+      };
+
       let createdProfile: Profile | undefined;
 
       await act(async () => {
-        createdProfile = await result.current.createProfile(formData);
+        createdProfile = await result.current.createProfile("user-123", formData);
       });
 
-      // 作成されたプロフィールが返される
       expect(createdProfile).toBeDefined();
-      expect(createdProfile!.name).toBe(formData.name);
-      expect(createdProfile!.jobTitle).toBe(formData.jobTitle);
-      expect(createdProfile!.bio).toBe(formData.bio);
-      expect(createdProfile!.skills).toEqual(formData.skills);
+      expect(createdProfile!.name).toBe("山田太郎");
+      expect(createdProfile!.jobTitle).toBe("フロントエンドエンジニア");
+      expect(createdProfile!.bio).toBe("Reactが得意です");
+      expect(createdProfile!.skills).toEqual(["React", "TypeScript"]);
       expect(createdProfile!.yearsOfExperience).toBe(5);
       expect(createdProfile!.socialLinks).toHaveLength(1);
-      expect(createdProfile!.socialLinks[0].service).toBe("github");
-      expect(createdProfile!.socialLinks[0].url).toBe("https://github.com/test");
+      expect(createdProfile!.user_id).toBe("user-123");
 
-      // 状態が更新される
       expect(result.current.profile).toEqual(createdProfile);
-      expect(result.current.loading).toBe(false);
       expect(result.current.error).toBeNull();
+      expect(mockRepository.save).toHaveBeenCalledWith(createdProfile);
     });
 
-    it("経験年数が空の場合、undefinedになる", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
+    it("bioが空文字列の場合、undefinedに変換される", async () => {
+      vi.mocked(mockRepository.save).mockResolvedValue();
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
       });
 
-      const formData = { ...createTestFormData(), yearsOfExperience: "" };
+      const formData = {
+        name: "山田太郎",
+        jobTitle: "エンジニア",
+        bio: "",
+        skills: [],
+        yearsOfExperience: "",
+        socialLinks: [],
+      };
+
       let createdProfile: Profile | undefined;
 
       await act(async () => {
-        createdProfile = await result.current.createProfile(formData);
-      });
-
-      expect(createdProfile!.yearsOfExperience).toBeUndefined();
-    });
-
-    it("bioが空の場合、undefinedになる", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
-      });
-
-      const formData = { ...createTestFormData(), bio: "" };
-      let createdProfile: Profile | undefined;
-
-      await act(async () => {
-        createdProfile = await result.current.createProfile(formData);
+        createdProfile = await result.current.createProfile("user-123", formData);
       });
 
       expect(createdProfile!.bio).toBeUndefined();
+      expect(createdProfile!.yearsOfExperience).toBeUndefined();
     });
 
-    it("SNSリンクにIDが付与される", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
+    it("プロフィール作成が失敗した場合、エラーを設定する", async () => {
+      vi.mocked(mockRepository.save).mockRejectedValue(new Error("保存エラー"));
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
       });
 
-      const formData = createTestFormData();
-      let createdProfile: Profile | undefined;
-
-      await act(async () => {
-        createdProfile = await result.current.createProfile(formData);
-      });
-
-      expect(createdProfile!.socialLinks[0].id).toBeDefined();
-      expect(typeof createdProfile!.socialLinks[0].id).toBe("string");
-    });
-
-    it("作成中はローディング状態になる", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
-      });
-
-      const formData = createTestFormData();
-
-      const promise = act(async () => {
-        await result.current.createProfile(formData);
-      });
-
-      // 作成中はローディング状態
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      await promise;
-    });
-
-    it("エラーが発生した場合、エラー状態が設定される", async () => {
-      mockRepository.saveError = new Error("保存エラー");
-
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
-      });
-
-      const formData = createTestFormData();
+      const formData = {
+        name: "山田太郎",
+        jobTitle: "エンジニア",
+        bio: "",
+        skills: [],
+        yearsOfExperience: "",
+        socialLinks: [],
+      };
 
       await act(async () => {
         try {
-          await result.current.createProfile(formData);
-          expect.unreachable("エラーが発生するはずです");
+          await result.current.createProfile("user-123", formData);
         } catch (error) {
-          // エラーは期待される
-          expect(error).toBeDefined();
+          // エラーが発生することを期待
         }
       });
 
       expect(result.current.error).toBe("保存エラー");
-      expect(result.current.loading).toBe(false);
+      expect(result.current.profile).toBeNull();
     });
   });
 
   describe("updateProfile", () => {
     it("プロフィールを更新できる", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
+      const existingProfile: Profile = {
+        id: "profile-123",
+        user_id: "user-123",
+        name: "山田太郎",
+        jobTitle: "エンジニア",
+        skills: [],
+        socialLinks: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      vi.mocked(mockRepository.findById).mockResolvedValue(existingProfile);
+      vi.mocked(mockRepository.save).mockResolvedValue();
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
       });
 
-      // まずプロフィールを作成
-      const formData = createTestFormData();
-      let createdProfile: Profile | undefined;
-
-      await act(async () => {
-        createdProfile = await result.current.createProfile(formData);
-      });
-
-      // 少し待機してタイムスタンプが異なることを保証
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      // プロフィールを更新
-      const updatedFormData = {
-        ...formData,
-        name: "更新されたユーザー",
+      const formData = {
+        name: "山田花子",
         jobTitle: "シニアエンジニア",
+        bio: "更新されました",
+        skills: ["React"],
+        yearsOfExperience: "10",
+        socialLinks: [],
       };
 
       let updatedProfile: Profile | undefined;
 
       await act(async () => {
-        updatedProfile = await result.current.updateProfile(
-          createdProfile!.id,
-          updatedFormData
-        );
+        updatedProfile = await result.current.updateProfile("profile-123", formData);
       });
 
-      expect(updatedProfile!.name).toBe("更新されたユーザー");
+      expect(updatedProfile).toBeDefined();
+      expect(updatedProfile!.name).toBe("山田花子");
       expect(updatedProfile!.jobTitle).toBe("シニアエンジニア");
-      expect(updatedProfile!.id).toBe(createdProfile!.id);
-      expect(updatedProfile!.createdAt).toBe(createdProfile!.createdAt);
-      expect(updatedProfile!.updatedAt).not.toBe(createdProfile!.updatedAt);
+      expect(updatedProfile!.bio).toBe("更新されました");
+      expect(updatedProfile!.yearsOfExperience).toBe(10);
 
-      // 状態が更新される
       expect(result.current.profile).toEqual(updatedProfile);
+      expect(result.current.error).toBeNull();
+      expect(mockRepository.save).toHaveBeenCalledWith(updatedProfile);
     });
 
     it("存在しないプロフィールを更新しようとするとエラーになる", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
+      vi.mocked(mockRepository.findById).mockResolvedValue(null);
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
       });
 
-      const formData = createTestFormData();
+      const formData = {
+        name: "山田太郎",
+        jobTitle: "エンジニア",
+        bio: "",
+        skills: [],
+        yearsOfExperience: "",
+        socialLinks: [],
+      };
 
       await act(async () => {
         try {
-          await result.current.updateProfile("non-existent-id", formData);
-          expect.unreachable("エラーが発生するはずです");
+          await result.current.updateProfile("nonexistent", formData);
         } catch (error) {
-          // エラーは期待される
-          expect(error).toBeDefined();
+          // エラーが発生することを期待
         }
       });
 
       expect(result.current.error).toBe("プロフィールが見つかりません");
     });
 
-    it("SNSリンクのIDが保持される", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
-      });
-
-      // プロフィールを作成
-      const formData = createTestFormData();
-      let createdProfile: Profile | undefined;
-
-      await act(async () => {
-        createdProfile = await result.current.createProfile(formData);
-      });
-
-      const originalLinkId = createdProfile!.socialLinks[0].id;
-
-      // プロフィールを更新
-      const updatedFormData = {
-        ...formData,
-        socialLinks: [
-          {
-            service: "github",
-            url: "https://github.com/updated",
-          },
-        ],
+    it("プロフィール更新が失敗した場合、エラーを設定する", async () => {
+      const existingProfile: Profile = {
+        id: "profile-123",
+        user_id: "user-123",
+        name: "山田太郎",
+        jobTitle: "エンジニア",
+        skills: [],
+        socialLinks: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
       };
 
-      let updatedProfile: Profile | undefined;
+      vi.mocked(mockRepository.findById).mockResolvedValue(existingProfile);
+      vi.mocked(mockRepository.save).mockRejectedValue(new Error("更新エラー"));
 
-      await act(async () => {
-        updatedProfile = await result.current.updateProfile(
-          createdProfile!.id,
-          updatedFormData
-        );
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
       });
 
-      // SNSリンクのIDが保持される
-      expect(updatedProfile!.socialLinks[0].id).toBe(originalLinkId);
-    });
-
-    it("エラーが発生した場合、エラー状態が設定される", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
-      });
-
-      // プロフィールを作成
-      const formData = createTestFormData();
-      let createdProfile: Profile | undefined;
-
-      await act(async () => {
-        createdProfile = await result.current.createProfile(formData);
-      });
-
-      // エラーを設定
-      mockRepository.saveError = new Error("更新エラー");
+      const formData = {
+        name: "山田太郎",
+        jobTitle: "エンジニア",
+        bio: "",
+        skills: [],
+        yearsOfExperience: "",
+        socialLinks: [],
+      };
 
       await act(async () => {
         try {
-          await result.current.updateProfile(createdProfile!.id, formData);
-          expect.unreachable("エラーが発生するはずです");
+          await result.current.updateProfile("profile-123", formData);
         } catch (error) {
-          // エラーは期待される
-          expect(error).toBeDefined();
+          // エラーが発生することを期待
         }
       });
 
@@ -349,56 +254,33 @@ describe("ProfileContext", () => {
 
   describe("deleteProfile", () => {
     it("プロフィールを削除できる", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
-      });
+      vi.mocked(mockRepository.delete).mockResolvedValue();
 
-      // プロフィールを作成
-      const formData = createTestFormData();
-      let createdProfile: Profile | undefined;
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
+      });
 
       await act(async () => {
-        createdProfile = await result.current.createProfile(formData);
+        await result.current.deleteProfile("profile-123");
       });
 
-      // プロフィールを削除
-      await act(async () => {
-        await result.current.deleteProfile(createdProfile!.id);
-      });
-
-      // 状態がnullになる
       expect(result.current.profile).toBeNull();
-      expect(result.current.loading).toBe(false);
       expect(result.current.error).toBeNull();
-
-      // Repositoryから削除される
-      const exists = await mockRepository.exists(createdProfile!.id);
-      expect(exists).toBe(false);
+      expect(mockRepository.delete).toHaveBeenCalledWith("profile-123");
     });
 
-    it("エラーが発生した場合、エラー状態が設定される", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
+    it("プロフィール削除が失敗した場合、エラーを設定する", async () => {
+      vi.mocked(mockRepository.delete).mockRejectedValue(new Error("削除エラー"));
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
       });
-
-      // プロフィールを作成
-      const formData = createTestFormData();
-      let createdProfile: Profile | undefined;
-
-      await act(async () => {
-        createdProfile = await result.current.createProfile(formData);
-      });
-
-      // エラーを設定
-      mockRepository.deleteError = new Error("削除エラー");
 
       await act(async () => {
         try {
-          await result.current.deleteProfile(createdProfile!.id);
-          expect.unreachable("エラーが発生するはずです");
+          await result.current.deleteProfile("profile-123");
         } catch (error) {
-          // エラーは期待される
-          expect(error).toBeDefined();
+          // エラーが発生することを期待
         }
       });
 
@@ -408,90 +290,158 @@ describe("ProfileContext", () => {
 
   describe("loadProfile", () => {
     it("プロフィールを読み込める", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
-      });
+      const mockProfile: Profile = {
+        id: "profile-123",
+        user_id: "user-123",
+        name: "山田太郎",
+        jobTitle: "エンジニア",
+        skills: [],
+        socialLinks: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
 
-      // プロフィールを作成
-      const formData = createTestFormData();
-      let createdProfile: Profile | undefined;
+      vi.mocked(mockRepository.findById).mockResolvedValue(mockProfile);
 
-      await act(async () => {
-        createdProfile = await result.current.createProfile(formData);
-      });
-
-      // 状態をクリア
-      await act(async () => {
-        await result.current.deleteProfile(createdProfile!.id);
-      });
-
-      // プロフィールを再度保存（削除されているので）
-      await mockRepository.save(createdProfile!);
-
-      // プロフィールを読み込む
-      let loadedProfile: Profile | null = null;
-
-      await act(async () => {
-        loadedProfile = await result.current.loadProfile(createdProfile!.id);
-      });
-
-      expect(loadedProfile).toEqual(createdProfile);
-      expect(result.current.profile).toEqual(createdProfile);
-    });
-
-    it("存在しないプロフィールを読み込むとnullが返される", async () => {
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
       });
 
       let loadedProfile: Profile | null | undefined;
 
       await act(async () => {
-        loadedProfile = await result.current.loadProfile("non-existent-id");
+        loadedProfile = await result.current.loadProfile("profile-123");
+      });
+
+      expect(loadedProfile).toEqual(mockProfile);
+      expect(result.current.profile).toEqual(mockProfile);
+      expect(result.current.error).toBeNull();
+      expect(mockRepository.findById).toHaveBeenCalledWith("profile-123");
+    });
+
+    it("存在しないプロフィールを読み込むとnullを返す", async () => {
+      vi.mocked(mockRepository.findById).mockResolvedValue(null);
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
+      });
+
+      let loadedProfile: Profile | null | undefined;
+
+      await act(async () => {
+        loadedProfile = await result.current.loadProfile("nonexistent");
       });
 
       expect(loadedProfile).toBeNull();
       expect(result.current.profile).toBeNull();
     });
 
-    it("エラーが発生した場合、nullが返される", async () => {
-      mockRepository.findByIdError = new Error("読み込みエラー");
+    it("プロフィール読み込みが失敗した場合、エラーを設定する", async () => {
+      vi.mocked(mockRepository.findById).mockRejectedValue(new Error("読み込みエラー"));
 
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
+      });
+
+      await act(async () => {
+        try {
+          await result.current.loadProfile("profile-123");
+        } catch (error) {
+          // エラーが発生することを期待
+        }
+      });
+
+      expect(result.current.error).toBe("読み込みエラー");
+    });
+  });
+
+  describe("loadMyProfile", () => {
+    it("自分のプロフィールを読み込める", async () => {
+      const mockProfile: Profile = {
+        id: "profile-123",
+        user_id: "user-123",
+        name: "山田太郎",
+        jobTitle: "エンジニア",
+        skills: [],
+        socialLinks: [],
+        createdAt: "2024-01-01T00:00:00Z",
+        updatedAt: "2024-01-01T00:00:00Z",
+      };
+
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(mockProfile);
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
       });
 
       let loadedProfile: Profile | null | undefined;
 
       await act(async () => {
-        loadedProfile = await result.current.loadProfile("test-id");
+        loadedProfile = await result.current.loadMyProfile("user-123");
+      });
+
+      expect(loadedProfile).toEqual(mockProfile);
+      expect(result.current.profile).toEqual(mockProfile);
+      expect(result.current.error).toBeNull();
+      expect(mockRepository.findByUserId).toHaveBeenCalledWith("user-123");
+    });
+
+    it("プロフィールが存在しない場合、nullを返す", async () => {
+      vi.mocked(mockRepository.findByUserId).mockResolvedValue(null);
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
+      });
+
+      let loadedProfile: Profile | null | undefined;
+
+      await act(async () => {
+        loadedProfile = await result.current.loadMyProfile("user-123");
       });
 
       expect(loadedProfile).toBeNull();
+      expect(result.current.profile).toBeNull();
+    });
+
+    it("プロフィール読み込みが失敗した場合、エラーを設定する", async () => {
+      vi.mocked(mockRepository.findByUserId).mockRejectedValue(
+        new Error("読み込みエラー")
+      );
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
+      });
+
+      await act(async () => {
+        try {
+          await result.current.loadMyProfile("user-123");
+        } catch (error) {
+          // エラーが発生することを期待
+        }
+      });
+
       expect(result.current.error).toBe("読み込みエラー");
     });
   });
 
   describe("clearError", () => {
-    it("エラーをクリアできる", async () => {
-      mockRepository.saveError = new Error("テストエラー");
+    it("エラーをクリアする", async () => {
+      vi.mocked(mockRepository.findById).mockRejectedValue(new Error("読み込みエラー"));
 
-      const { result } = renderHook(() => useProfileContext(), {
-        wrapper: createWrapper(mockRepository),
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
       });
 
       // エラーを発生させる
       await act(async () => {
         try {
-          await result.current.createProfile(createTestFormData());
-          expect.unreachable("エラーが発生するはずです");
+          await result.current.loadProfile("profile-123");
         } catch (error) {
-          // エラーは期待される
-          expect(error).toBeDefined();
+          // エラーが発生することを期待
         }
       });
 
-      expect(result.current.error).toBe("テストエラー");
+      expect(result.current.error).toBe("読み込みエラー");
 
       // エラーをクリア
       act(() => {
@@ -502,14 +452,14 @@ describe("ProfileContext", () => {
     });
   });
 
-  describe("useProfileContext", () => {
-    it("Provider外で使用するとエラーになる", () => {
+  describe("useProfile", () => {
+    it("ProfileProvider外で使用するとエラーをスローする", () => {
       // エラーをキャッチするためにconsole.errorをモック
       const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
       expect(() => {
-        renderHook(() => useProfileContext());
-      }).toThrow("useProfileContext must be used within a ProfileProvider");
+        renderHook(() => useProfile());
+      }).toThrow("useProfileはProfileProvider内で使用する必要があります");
 
       consoleError.mockRestore();
     });

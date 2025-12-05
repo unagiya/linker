@@ -107,7 +107,7 @@
   - **プロパティ27: データベースラウンドトリップ**
   - **検証: 要件 7.1, 7.2**
 
-- [ ] 7. ProfileContextの実装
+- [x] 7. ProfileContextの実装
   - ProfileContextとProfileProviderの作成
   - useReducerを使用した状態管理
   - Repository依存性注入の実装
@@ -115,7 +115,7 @@
   - ローディング状態とエラー状態の管理
   - _要件: 3.3, 5.4, 10.2_
 
-- [ ] 7.1 ProfileContextのユニットテストを作成
+- [x] 7.1 ProfileContextのユニットテストを作成
   - モックRepositoryを使用したテスト
   - 各アクションのテスト
   - エラーハンドリングのテスト

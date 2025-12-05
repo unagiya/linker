@@ -1,194 +1,272 @@
 /**
- * ProfileContext
- * プロフィールの状態管理を提供
+ * プロフィールコンテキスト
+ * プロフィールの状態管理を担当するContext
  */
 
-import { createContext, useContext, useReducer, useCallback } from "react";
-import type { ReactNode } from "react";
-import type { Profile, ProfileFormData } from "../../types";
-import type { ProfileRepository } from "../../repositories";
-import type { ProfileContextValue } from "./types";
-import { profileReducer, initialState } from "./reducer";
+import React, { createContext, useContext, useReducer } from "react";
+import type { Profile, ProfileFormData } from "../../types/profile";
+import type { ProfileRepository } from "../../repositories/ProfileRepository";
 
 /**
- * ProfileContext
+ * プロフィール状態の型
  */
-const ProfileContext = createContext<ProfileContextValue | undefined>(
-  undefined
-);
+interface ProfileState {
+  /** 現在のプロフィール */
+  profile: Profile | null;
+  /** ローディング状態 */
+  loading: boolean;
+  /** エラーメッセージ */
+  error: string | null;
+}
 
 /**
- * ProfileProviderのProps
+ * プロフィールアクションの型
+ */
+type ProfileAction =
+  | { type: "SET_PROFILE"; payload: Profile | null }
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_ERROR"; payload: string | null }
+  | { type: "CLEAR_ERROR" };
+
+/**
+ * プロフィールコンテキストの値の型
+ */
+interface ProfileContextValue extends ProfileState {
+  /** プロフィール作成 */
+  createProfile: (userId: string, data: ProfileFormData) => Promise<Profile>;
+  /** プロフィール更新 */
+  updateProfile: (id: string, data: ProfileFormData) => Promise<Profile>;
+  /** プロフィール削除 */
+  deleteProfile: (id: string) => Promise<void>;
+  /** プロフィール読み込み */
+  loadProfile: (id: string) => Promise<Profile | null>;
+  /** 自分のプロフィール読み込み */
+  loadMyProfile: (userId: string) => Promise<Profile | null>;
+  /** エラークリア */
+  clearError: () => void;
+}
+
+/**
+ * プロフィールリデューサー
+ */
+function profileReducer(state: ProfileState, action: ProfileAction): ProfileState {
+  switch (action.type) {
+    case "SET_PROFILE":
+      return {
+        ...state,
+        profile: action.payload,
+        loading: false,
+        error: null,
+      };
+    case "SET_LOADING":
+      return {
+        ...state,
+        loading: action.payload,
+      };
+    case "SET_ERROR":
+      return {
+        ...state,
+        error: action.payload,
+        loading: false,
+      };
+    case "CLEAR_ERROR":
+      return {
+        ...state,
+        error: null,
+      };
+    default:
+      return state;
+  }
+}
+
+/**
+ * 初期状態
+ */
+const initialState: ProfileState = {
+  profile: null,
+  loading: false,
+  error: null,
+};
+
+/**
+ * プロフィールコンテキスト
+ */
+const ProfileContext = createContext<ProfileContextValue | undefined>(undefined);
+
+/**
+ * プロフィールプロバイダーのプロパティ
  */
 interface ProfileProviderProps {
-  /** 子要素 */
-  children: ReactNode;
-  /** Repository実装 */
+  children: React.ReactNode;
+  /** 注入されたRepository実装 */
   repository: ProfileRepository;
 }
 
 /**
- * ProfileProvider
- * プロフィールの状態管理を提供するProvider
+ * プロフィールプロバイダー
  */
-export function ProfileProvider({
-  children,
-  repository,
-}: ProfileProviderProps) {
+export function ProfileProvider({ children, repository }: ProfileProviderProps) {
   const [state, dispatch] = useReducer(profileReducer, initialState);
 
   /**
-   * プロフィールを作成する
+   * プロフィール作成
    */
-  const createProfile = useCallback(
-    async (data: ProfileFormData): Promise<Profile> => {
+  const createProfile = async (
+    userId: string,
+    data: ProfileFormData
+  ): Promise<Profile> => {
+    try {
       dispatch({ type: "SET_LOADING", payload: true });
       dispatch({ type: "CLEAR_ERROR" });
 
-      try {
-        // UUIDを生成（簡易版）
-        const id = crypto.randomUUID();
-        const now = new Date().toISOString();
-
-        // 経験年数を数値に変換
-        const yearsOfExperience = data.yearsOfExperience
+      // ProfileFormDataからProfileを作成
+      const now = new Date().toISOString();
+      const profile: Profile = {
+        id: crypto.randomUUID(),
+        user_id: userId,
+        name: data.name,
+        jobTitle: data.jobTitle,
+        bio: data.bio || undefined,
+        skills: data.skills,
+        yearsOfExperience: data.yearsOfExperience
           ? parseInt(data.yearsOfExperience, 10)
-          : undefined;
-
-        // SNSリンクにIDを付与
-        const socialLinks = data.socialLinks.map((link) => ({
+          : undefined,
+        socialLinks: data.socialLinks.map((link) => ({
           id: crypto.randomUUID(),
           service: link.service,
           url: link.url,
-        }));
+        })),
+        createdAt: now,
+        updatedAt: now,
+      };
 
-        const profile: Profile = {
-          id,
-          name: data.name,
-          jobTitle: data.jobTitle,
-          bio: data.bio || undefined,
-          skills: data.skills,
-          yearsOfExperience,
-          socialLinks,
-          createdAt: now,
-          updatedAt: now,
-        };
+      // Repositoryに保存
+      await repository.save(profile);
 
-        await repository.save(profile);
-        dispatch({ type: "SET_PROFILE", payload: profile });
+      dispatch({ type: "SET_PROFILE", payload: profile });
 
-        return profile;
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "プロフィールの作成に失敗しました";
-        dispatch({ type: "SET_ERROR", payload: errorMessage });
-        throw error;
-      }
-    },
-    [repository]
-  );
+      return profile;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "プロフィールの作成に失敗しました";
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
+      throw error;
+    }
+  };
 
   /**
-   * プロフィールを更新する
+   * プロフィール更新
    */
-  const updateProfile = useCallback(
-    async (id: string, data: ProfileFormData): Promise<Profile> => {
+  const updateProfile = async (id: string, data: ProfileFormData): Promise<Profile> => {
+    try {
       dispatch({ type: "SET_LOADING", payload: true });
       dispatch({ type: "CLEAR_ERROR" });
 
-      try {
-        // 既存のプロフィールを取得
-        const existingProfile = await repository.findById(id);
-        if (!existingProfile) {
-          throw new Error("プロフィールが見つかりません");
-        }
+      // 既存のプロフィールを取得
+      const existingProfile = await repository.findById(id);
+      if (!existingProfile) {
+        throw new Error("プロフィールが見つかりません");
+      }
 
-        // 経験年数を数値に変換
-        const yearsOfExperience = data.yearsOfExperience
+      // 更新されたプロフィールを作成
+      const updatedProfile: Profile = {
+        ...existingProfile,
+        name: data.name,
+        jobTitle: data.jobTitle,
+        bio: data.bio || undefined,
+        skills: data.skills,
+        yearsOfExperience: data.yearsOfExperience
           ? parseInt(data.yearsOfExperience, 10)
-          : undefined;
-
-        // SNSリンクにIDを付与（既存のIDがあれば保持）
-        const socialLinks = data.socialLinks.map((link, index) => ({
+          : undefined,
+        socialLinks: data.socialLinks.map((link, index) => ({
           id: existingProfile.socialLinks[index]?.id || crypto.randomUUID(),
           service: link.service,
           url: link.url,
-        }));
+        })),
+        updatedAt: new Date().toISOString(),
+      };
 
-        const updatedProfile: Profile = {
-          ...existingProfile,
-          name: data.name,
-          jobTitle: data.jobTitle,
-          bio: data.bio || undefined,
-          skills: data.skills,
-          yearsOfExperience,
-          socialLinks,
-          updatedAt: new Date().toISOString(),
-        };
+      // Repositoryに保存
+      await repository.save(updatedProfile);
 
-        await repository.save(updatedProfile);
-        dispatch({ type: "SET_PROFILE", payload: updatedProfile });
+      dispatch({ type: "SET_PROFILE", payload: updatedProfile });
 
-        return updatedProfile;
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "プロフィールの更新に失敗しました";
-        dispatch({ type: "SET_ERROR", payload: errorMessage });
-        throw error;
-      }
-    },
-    [repository]
-  );
+      return updatedProfile;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "プロフィールの更新に失敗しました";
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
+      throw error;
+    }
+  };
 
   /**
-   * プロフィールを削除する
+   * プロフィール削除
    */
-  const deleteProfile = useCallback(
-    async (id: string): Promise<void> => {
+  const deleteProfile = async (id: string): Promise<void> => {
+    try {
       dispatch({ type: "SET_LOADING", payload: true });
       dispatch({ type: "CLEAR_ERROR" });
 
-      try {
-        await repository.delete(id);
-        dispatch({ type: "SET_PROFILE", payload: null });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "プロフィールの削除に失敗しました";
-        dispatch({ type: "SET_ERROR", payload: errorMessage });
-        throw error;
-      }
-    },
-    [repository]
-  );
+      await repository.delete(id);
+
+      dispatch({ type: "SET_PROFILE", payload: null });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "プロフィールの削除に失敗しました";
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
+      throw error;
+    }
+  };
 
   /**
-   * プロフィールを読み込む
+   * プロフィール読み込み
    */
-  const loadProfile = useCallback(
-    async (id: string): Promise<Profile | null> => {
+  const loadProfile = async (id: string): Promise<Profile | null> => {
+    try {
       dispatch({ type: "SET_LOADING", payload: true });
       dispatch({ type: "CLEAR_ERROR" });
 
-      try {
-        const profile = await repository.findById(id);
-        dispatch({ type: "SET_PROFILE", payload: profile });
-        return profile;
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "プロフィールの読み込みに失敗しました";
-        dispatch({ type: "SET_ERROR", payload: errorMessage });
-        return null;
-      }
-    },
-    [repository]
-  );
+      const profile = await repository.findById(id);
+
+      dispatch({ type: "SET_PROFILE", payload: profile });
+
+      return profile;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "プロフィールの読み込みに失敗しました";
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
+      throw error;
+    }
+  };
 
   /**
-   * エラーをクリアする
+   * 自分のプロフィール読み込み
    */
-  const clearError = useCallback(() => {
+  const loadMyProfile = async (userId: string): Promise<Profile | null> => {
+    try {
+      dispatch({ type: "SET_LOADING", payload: true });
+      dispatch({ type: "CLEAR_ERROR" });
+
+      const profile = await repository.findByUserId(userId);
+
+      dispatch({ type: "SET_PROFILE", payload: profile });
+
+      return profile;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "プロフィールの読み込みに失敗しました";
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
+      throw error;
+    }
+  };
+
+  /**
+   * エラークリア
+   */
+  const clearError = () => {
     dispatch({ type: "CLEAR_ERROR" });
-  }, []);
+  };
 
   const value: ProfileContextValue = {
     ...state,
@@ -196,22 +274,20 @@ export function ProfileProvider({
     updateProfile,
     deleteProfile,
     loadProfile,
+    loadMyProfile,
     clearError,
   };
 
-  return (
-    <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>
-  );
+  return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 }
 
 /**
- * ProfileContextを使用するカスタムフック
+ * プロフィールコンテキストを使用するカスタムフック
  */
-// eslint-disable-next-line react-refresh/only-export-components
-export function useProfileContext(): ProfileContextValue {
+export function useProfile(): ProfileContextValue {
   const context = useContext(ProfileContext);
   if (context === undefined) {
-    throw new Error("useProfileContext must be used within a ProfileProvider");
+    throw new Error("useProfileはProfileProvider内で使用する必要があります");
   }
   return context;
 }
