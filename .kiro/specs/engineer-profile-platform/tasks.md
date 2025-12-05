@@ -1,6 +1,6 @@
 # 実装計画
 
-- [ ] 1. Supabaseプロジェクトのセットアップ
+- [x] 1. Supabaseプロジェクトのセットアップ
   - Supabaseプロジェクトの作成（https://supabase.com）
   - プロジェクトURLとAPIキーの取得
   - 環境変数の設定（.env.local）
