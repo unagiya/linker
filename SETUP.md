@@ -30,6 +30,16 @@
 
 ### 1.3 環境変数の設定
 
+#### 方法1: Makefileを使用（推奨）
+
+```bash
+make setup-env
+```
+
+このコマンドで`.env.local`ファイルが自動的に作成されます。
+
+#### 方法2: 手動で作成
+
 1. プロジェクトルートに`.env.local`ファイルを作成
 2. `.env.local.example`を参考に、以下の内容を記述：
 
@@ -40,15 +50,28 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ⚠️ **注意**: `.env.local`ファイルは`.gitignore`に含まれており、Gitにコミットされません。
 
+### 1.4 環境変数の編集
+
+`.env.local`ファイルを開き、Supabaseから取得した値を設定してください：
+
+```env
+VITE_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
 ## 2. 依存関係のインストール
 
 ```bash
+make install
+# または
 npm install
 ```
 
 ## 3. 開発サーバーの起動
 
 ```bash
+make dev
+# または
 npm run dev
 ```
 
@@ -59,6 +82,22 @@ npm run dev
 次のタスク（タスク2）で、Supabaseのデータベーススキーマを作成します。
 
 ## その他のコマンド
+
+### Makefileコマンド
+
+- `make help` - 利用可能なコマンド一覧を表示
+- `make setup-env` - 環境変数ファイルを作成
+- `make install` - 依存関係をインストール
+- `make dev` - 開発サーバーを起動
+- `make build` - プロダクションビルド
+- `make test` - テスト実行
+- `make test-watch` - テストをウォッチモードで実行
+- `make lint` - ESLintでコードチェック
+- `make lint-fix` - ESLintで自動修正
+- `make format` - Prettierでコードフォーマット
+- `make clean` - ビルド成果物を削除
+
+### npmコマンド
 
 - `npm run build` - プロダクションビルド
 - `npm run test` - テスト実行
