@@ -84,7 +84,13 @@ export const profileFormSchema = z.object({
           .string()
           .min(1, "サービス名は必須です")
           .max(50, "サービス名は50文字以内で入力してください"),
-        url: z.string().url("有効なURLを入力してください"),
+        url: z
+          .string()
+          .url("有効なURLを入力してください")
+          .refine(
+            (url) => url.startsWith("http://") || url.startsWith("https://"),
+            "URLはhttp://またはhttps://で始まる必要があります"
+          ),
       })
     )
     .max(10, "SNSリンクは10個まで登録できます")
