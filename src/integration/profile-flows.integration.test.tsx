@@ -138,10 +138,6 @@ describe("プロフィール編集フローの統合テスト", () => {
       expect(screen.getByText("田中一郎")).toBeInTheDocument();
     });
 
-    // プロフィールIDを取得
-    const profiles = await repository.findAll();
-    const _profileId = profiles[0].id;
-
     // 編集ボタンをクリック
     const editButton = screen.getByRole("button", { name: /編集/i });
     await user.click(editButton);
@@ -201,10 +197,9 @@ describe("プロフィール削除フローの統合テスト", () => {
       expect(screen.getByText("削除テスト")).toBeInTheDocument();
     });
 
-    // プロフィールIDを取得
+    // プロフィールが作成されたことを確認
     const profiles = await repository.findAll();
     expect(profiles).toHaveLength(1);
-    const _profileId = profiles[0].id;
 
     // 削除ボタンをクリック
     const deleteButton = screen.getByRole("button", { name: /削除/i });
@@ -306,5 +301,208 @@ describe("ルーティングとナビゲーションのテスト", () => {
         screen.getByText(/プロフィールが見つかりません/)
       ).toBeInTheDocument();
     });
+  });
+});
+
+describe("ナビゲーションの統合テスト", () => {
+  let repository: LocalStorageRepository;
+
+  beforeEach(async () => {
+    repository = new LocalStorageRepository();
+    await repository.clear();
+  });
+
+  it("ホームページからプロフィール作成ページに遷移できる", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <ProfileProvider repository={repository}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/create" element={<CreateProfile />} />
+          </Routes>
+        </ProfileProvider>
+      </MemoryRouter>
+    );
+
+    // ホームページが表示されることを確認
+    expect(screen.getByText("Linker")).toBeInTheDocument();
+    expect(
+      screen.getByText(/エンジニアのためのプロフィール共有プラットフォーム/)
+    ).toBeInTheDocument();
+
+    // プロフィール作成リンクをクリック
+    const createLink = screen.getByRole("link", {
+      name: /プロフィールを作成/i,
+    });
+    await user.click(createLink);
+
+    // プロフィール作成ページに遷移することを確認
+    await waitFor(() => {
+      expect(screen.getByText(/プロフィール作成/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/名前/i)).toBeInTheDocument();
+    });
+  });
+
+  it("編集ページからキャンセルするとプロフィール詳細ページに戻る", async () => {
+    const user = userEvent.setup();
+
+    // プロフィールを作成
+    render(
+      <MemoryRouter initialEntries={["/create"]}>
+        <ProfileProvider repository={repository}>
+          <Routes>
+            <Route path="/create" element={<CreateProfile />} />
+            <Route path="/profile/:id" element={<ViewProfile />} />
+            <Route path="/profile/:id/edit" element={<EditProfile />} />
+          </Routes>
+        </ProfileProvider>
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByLabelText(/名前/i), "キャンセルテスト");
+    await user.type(screen.getByLabelText(/職種/i), "エンジニア");
+    await user.click(screen.getByRole("button", { name: /保存/i }));
+
+    // プロフィール詳細ページに遷移
+    await waitFor(() => {
+      expect(screen.getByText("キャンセルテスト")).toBeInTheDocument();
+    });
+
+    // 編集ボタンをクリック
+    await user.click(screen.getByRole("button", { name: /編集/i }));
+
+    // 編集ページに遷移
+    await waitFor(() => {
+      expect(screen.getByText(/プロフィール編集/)).toBeInTheDocument();
+    });
+
+    // キャンセルボタンをクリック
+    await user.click(screen.getByRole("button", { name: /キャンセル/i }));
+
+    // プロフィール詳細ページに戻ることを確認
+    await waitFor(() => {
+      expect(screen.getByText("キャンセルテスト")).toBeInTheDocument();
+      expect(screen.queryByText(/プロフィール編集/)).not.toBeInTheDocument();
+    });
+  });
+});
+
+describe("データ永続化の統合テスト", () => {
+  let repository: LocalStorageRepository;
+
+  beforeEach(async () => {
+    repository = new LocalStorageRepository();
+    await repository.clear();
+  });
+
+  it("プロフィールを作成後、再読み込みしてもデータが保持される", async () => {
+    const user = userEvent.setup();
+
+    // プロフィールを作成
+    const { unmount } = render(
+      <MemoryRouter initialEntries={["/create"]}>
+        <ProfileProvider repository={repository}>
+          <Routes>
+            <Route path="/create" element={<CreateProfile />} />
+            <Route path="/profile/:id" element={<ViewProfile />} />
+          </Routes>
+        </ProfileProvider>
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByLabelText(/名前/i), "永続化テスト");
+    await user.type(screen.getByLabelText(/職種/i), "データエンジニア");
+    await user.click(screen.getByRole("button", { name: /保存/i }));
+
+    // プロフィール詳細ページに遷移
+    await waitFor(() => {
+      expect(screen.getByText("永続化テスト")).toBeInTheDocument();
+    });
+
+    // プロフィールIDを取得
+    const profiles = await repository.findAll();
+    const profileId = profiles[0].id;
+
+    // コンポーネントをアンマウント（ページリロードをシミュレート）
+    unmount();
+
+    // 新しいインスタンスで同じプロフィールを読み込む
+    render(
+      <MemoryRouter initialEntries={[`/profile/${profileId}`]}>
+        <ProfileProvider repository={repository}>
+          <Routes>
+            <Route path="/profile/:id" element={<ViewProfile />} />
+          </Routes>
+        </ProfileProvider>
+      </MemoryRouter>
+    );
+
+    // データが保持されていることを確認
+    await waitFor(() => {
+      expect(screen.getByText("永続化テスト")).toBeInTheDocument();
+      expect(screen.getByText("データエンジニア")).toBeInTheDocument();
+    });
+  });
+
+  it("複数のプロフィールを作成し、それぞれ独立して管理される", async () => {
+    const user = userEvent.setup();
+
+    // 1つ目のプロフィールを作成
+    const { unmount: unmount1 } = render(
+      <MemoryRouter initialEntries={["/create"]}>
+        <ProfileProvider repository={repository}>
+          <Routes>
+            <Route path="/create" element={<CreateProfile />} />
+            <Route path="/profile/:id" element={<ViewProfile />} />
+          </Routes>
+        </ProfileProvider>
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByLabelText(/名前/i), "ユーザー1");
+    await user.type(screen.getByLabelText(/職種/i), "エンジニア1");
+    await user.click(screen.getByRole("button", { name: /保存/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("ユーザー1")).toBeInTheDocument();
+    });
+
+    unmount1();
+
+    // 2つ目のプロフィールを作成
+    const { unmount: unmount2 } = render(
+      <MemoryRouter initialEntries={["/create"]}>
+        <ProfileProvider repository={repository}>
+          <Routes>
+            <Route path="/create" element={<CreateProfile />} />
+            <Route path="/profile/:id" element={<ViewProfile />} />
+          </Routes>
+        </ProfileProvider>
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByLabelText(/名前/i), "ユーザー2");
+    await user.type(screen.getByLabelText(/職種/i), "エンジニア2");
+    await user.click(screen.getByRole("button", { name: /保存/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("ユーザー2")).toBeInTheDocument();
+    });
+
+    unmount2();
+
+    // 両方のプロフィールが保存されていることを確認
+    const profiles = await repository.findAll();
+    expect(profiles).toHaveLength(2);
+
+    const profile1 = profiles.find((p) => p.name === "ユーザー1");
+    const profile2 = profiles.find((p) => p.name === "ユーザー2");
+
+    expect(profile1).toBeDefined();
+    expect(profile2).toBeDefined();
+    expect(profile1?.jobTitle).toBe("エンジニア1");
+    expect(profile2?.jobTitle).toBe("エンジニア2");
   });
 });
