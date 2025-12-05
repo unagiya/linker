@@ -7,16 +7,28 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useProfileContext } from "../../contexts/ProfileContext";
 import { ProfileCard } from "../../components/ProfileCard";
-import { LoadingSpinner, ErrorMessage } from "../../components/common";
+import {
+  LoadingSpinner,
+  ErrorMessage,
+  ConfirmDialog,
+} from "../../components/common";
 import "./ViewProfile.css";
 
 export function ViewProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { profile, loadProfile, loading, error, clearError } =
-    useProfileContext();
+  const {
+    profile,
+    loadProfile,
+    deleteProfile,
+    loading,
+    error,
+    clearError,
+  } = useProfileContext();
   const [notFound, setNotFound] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -35,10 +47,26 @@ export function ViewProfile() {
   };
 
   const handleDelete = () => {
-    if (id) {
-      // 削除確認は後で実装
-      navigate(`/profile/${id}/delete`);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!id) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteProfile(id);
+      // 削除成功時、ホームページにリダイレクト
+      navigate("/");
+    } catch (err) {
+      console.error("プロフィール削除エラー:", err);
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteDialog(false);
   };
 
   const handleShare = async () => {
@@ -108,6 +136,18 @@ export function ViewProfile() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onShare={handleShare}
+        />
+
+        <ConfirmDialog
+          isOpen={showDeleteDialog}
+          title="プロフィールを削除"
+          message="本当にこのプロフィールを削除しますか？この操作は取り消せません。"
+          confirmText="削除"
+          cancelText="キャンセル"
+          confirmVariant="danger"
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+          isProcessing={isDeleting}
         />
       </div>
     </div>
