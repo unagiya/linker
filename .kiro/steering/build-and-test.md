@@ -20,6 +20,14 @@ npm run build
 
 ## テストの実行
 
+### 重要: npmコマンド実行前の確認
+
+**npmコマンドを実行する前に、必ずpackage.jsonを確認してください。**
+
+- package.jsonのscriptsセクションを確認して、既に含まれているオプションを把握する
+- 重複するオプションを指定しないようにする
+- 例: `npm test`が既に`vitest --run`を含む場合、`npm test -- --run`は不要
+
 ### すべてのテストを実行
 ```bash
 npm test
@@ -30,7 +38,15 @@ npm test
 npm test -- <test-file-path>
 ```
 
+注意: package.jsonの`test`スクリプトに既に`--run`が含まれている場合、追加で`--run`を指定する必要はありません。
+
 ### ウォッチモードでテストを実行
+```bash
+npm run test:watch
+```
+
+または
+
 ```bash
 npm test -- --watch
 ```
