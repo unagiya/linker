@@ -436,3 +436,387 @@ describe("Property 12: プロフィール情報の完全表示", () => {
     );
   });
 });
+
+/**
+ * Feature: engineer-profile-platform, Property 13: 外部リンクのレンダリング
+ * 検証: 要件 4.3
+ *
+ * 任意のURL付きプロフィールに対して、GitHub、Twitter、ポートフォリオのURLが
+ * クリック可能なリンク要素としてレンダリングされる
+ */
+describe("Property 13: 外部リンクのレンダリング", () => {
+  // 各テストの後にクリーンアップ
+  afterEach(() => {
+    cleanup();
+  });
+
+  // 有効な日付範囲を持つ日付ジェネレーター
+  const validDateArbitrary = fc
+    .integer({
+      min: new Date("2000-01-01").getTime(),
+      max: new Date("2099-12-31").getTime(),
+    })
+    .map((timestamp) => new Date(timestamp).toISOString());
+
+  // SNSリンクのジェネレーター
+  const socialLinkArbitrary = fc.record({
+    id: fc.uuid(),
+    service: fc.oneof(
+      fc.constantFrom(
+        PredefinedService.TWITTER,
+        PredefinedService.GITHUB,
+        PredefinedService.FACEBOOK
+      ),
+      fc
+        .string({ minLength: 1, maxLength: 50 })
+        .filter((s) => s.trim().length > 0) // 空白のみの文字列を除外
+    ),
+    url: fc.webUrl({ validSchemes: ["http", "https"] }),
+  });
+
+  // URL付きプロフィールのジェネレーター
+  const profileWithLinksArbitrary = fc.record({
+    id: fc.uuid(),
+    name: fc
+      .string({ minLength: 2, maxLength: 100 })
+      .filter((s) => s.trim().length > 1),
+    jobTitle: fc
+      .string({ minLength: 2, maxLength: 100 })
+      .filter((s) => s.trim().length > 1),
+    bio: fc.option(fc.string({ minLength: 1, maxLength: 500 }), {
+      nil: undefined,
+    }),
+    skills: fc.array(
+      fc
+        .string({ minLength: 1, maxLength: 50 })
+        .filter((s) => s.trim().length > 0),
+      { maxLength: 20 }
+    ),
+    yearsOfExperience: fc.option(fc.integer({ min: 0, max: 100 }), {
+      nil: undefined,
+    }),
+    socialLinks: fc.array(socialLinkArbitrary, {
+      minLength: 1,
+      maxLength: 10,
+    }),
+    createdAt: validDateArbitrary,
+    updatedAt: validDateArbitrary,
+  }) as fc.Arbitrary<Profile>;
+
+  it("すべての外部リンクがクリック可能なリンク要素としてレンダリングされる", () => {
+    fc.assert(
+      fc.property(profileWithLinksArbitrary, (profile) => {
+        const { container } = render(
+          <ProfileCard profile={profile} isOwner={false} />
+        );
+
+        // すべてのSNSリンクがa要素としてレンダリングされている
+        const allLinks = container.querySelectorAll("a");
+
+        for (const socialLink of profile.socialLinks) {
+          // 各SNSリンクのURLがhref属性として設定されている
+          const hasLink = Array.from(allLinks).some(
+            (a) => a.getAttribute("href") === socialLink.url
+          );
+          if (!hasLink) return false;
+
+          // リンクがクリック可能（target="_blank"とrel="noopener noreferrer"が設定されている）
+          const linkElement = Array.from(allLinks).find(
+            (a) => a.getAttribute("href") === socialLink.url
+          );
+          if (!linkElement) return false;
+          if (linkElement.getAttribute("target") !== "_blank") return false;
+          if (linkElement.getAttribute("rel") !== "noopener noreferrer")
+            return false;
+        }
+
+        return true;
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("各リンクにサービス名が表示される", () => {
+    fc.assert(
+      fc.property(profileWithLinksArbitrary, (profile) => {
+        const { container } = render(
+          <ProfileCard profile={profile} isOwner={false} />
+        );
+
+        // すべてのSNSリンクのサービス名が表示されている
+        for (const socialLink of profile.socialLinks) {
+          if (!container.textContent?.includes(socialLink.service))
+            return false;
+        }
+
+        return true;
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("定義済みサービス（GitHub、Twitter、Facebook）のリンクが正しくレンダリングされる", () => {
+    // 定義済みサービスのみを含むプロフィールジェネレーター
+    const predefinedServicesProfileArbitrary = fc.record({
+      id: fc.uuid(),
+      name: fc
+        .string({ minLength: 2, maxLength: 100 })
+        .filter((s) => s.trim().length > 1),
+      jobTitle: fc
+        .string({ minLength: 2, maxLength: 100 })
+        .filter((s) => s.trim().length > 1),
+      bio: fc.option(fc.string({ minLength: 1, maxLength: 500 }), {
+        nil: undefined,
+      }),
+      skills: fc.array(
+        fc
+          .string({ minLength: 1, maxLength: 50 })
+          .filter((s) => s.trim().length > 0),
+        { maxLength: 20 }
+      ),
+      yearsOfExperience: fc.option(fc.integer({ min: 0, max: 100 }), {
+        nil: undefined,
+      }),
+      socialLinks: fc.array(
+        fc.record({
+          id: fc.uuid(),
+          service: fc.constantFrom(
+            PredefinedService.TWITTER,
+            PredefinedService.GITHUB,
+            PredefinedService.FACEBOOK
+          ),
+          url: fc.webUrl({ validSchemes: ["http", "https"] }),
+        }),
+        { minLength: 1, maxLength: 5 }
+      ),
+      createdAt: validDateArbitrary,
+      updatedAt: validDateArbitrary,
+    }) as fc.Arbitrary<Profile>;
+
+    fc.assert(
+      fc.property(predefinedServicesProfileArbitrary, (profile) => {
+        const { container } = render(
+          <ProfileCard profile={profile} isOwner={false} />
+        );
+
+        const allLinks = container.querySelectorAll("a");
+
+        // すべての定義済みサービスのリンクが正しくレンダリングされている
+        for (const socialLink of profile.socialLinks) {
+          const linkElement = Array.from(allLinks).find(
+            (a) => a.getAttribute("href") === socialLink.url
+          );
+          if (!linkElement) return false;
+
+          // サービス名が表示されている
+          if (!container.textContent?.includes(socialLink.service))
+            return false;
+
+          // 適切なアイコンが表示されている
+          const hasIcon =
+            (socialLink.service === PredefinedService.GITHUB &&
+              container.textContent?.includes("💻")) ||
+            (socialLink.service === PredefinedService.TWITTER &&
+              container.textContent?.includes("🐦")) ||
+            (socialLink.service === PredefinedService.FACEBOOK &&
+              container.textContent?.includes("👥"));
+
+          if (!hasIcon) return false;
+        }
+
+        return true;
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("カスタムサービスのリンクが正しくレンダリングされる", () => {
+    // カスタムサービスのみを含むプロフィールジェネレーター
+    const customServicesProfileArbitrary = fc.record({
+      id: fc.uuid(),
+      name: fc
+        .string({ minLength: 2, maxLength: 100 })
+        .filter((s) => s.trim().length > 1),
+      jobTitle: fc
+        .string({ minLength: 2, maxLength: 100 })
+        .filter((s) => s.trim().length > 1),
+      bio: fc.option(fc.string({ minLength: 1, maxLength: 500 }), {
+        nil: undefined,
+      }),
+      skills: fc.array(
+        fc
+          .string({ minLength: 1, maxLength: 50 })
+          .filter((s) => s.trim().length > 0),
+        { maxLength: 20 }
+      ),
+      yearsOfExperience: fc.option(fc.integer({ min: 0, max: 100 }), {
+        nil: undefined,
+      }),
+      socialLinks: fc.array(
+        fc.record({
+          id: fc.uuid(),
+          service: fc
+            .string({ minLength: 2, maxLength: 50 })
+            .filter((s) => s.trim().length > 1)
+            .filter(
+              (s) =>
+                s !== PredefinedService.TWITTER &&
+                s !== PredefinedService.GITHUB &&
+                s !== PredefinedService.FACEBOOK
+            ),
+          url: fc.webUrl({ validSchemes: ["http", "https"] }),
+        }),
+        { minLength: 1, maxLength: 5 }
+      ),
+      createdAt: validDateArbitrary,
+      updatedAt: validDateArbitrary,
+    }) as fc.Arbitrary<Profile>;
+
+    fc.assert(
+      fc.property(customServicesProfileArbitrary, (profile) => {
+        const { container } = render(
+          <ProfileCard profile={profile} isOwner={false} />
+        );
+
+        const allLinks = container.querySelectorAll("a");
+
+        // すべてのカスタムサービスのリンクが正しくレンダリングされている
+        for (const socialLink of profile.socialLinks) {
+          const linkElement = Array.from(allLinks).find(
+            (a) => a.getAttribute("href") === socialLink.url
+          );
+          if (!linkElement) return false;
+
+          // カスタムサービス名が表示されている
+          if (!container.textContent?.includes(socialLink.service))
+            return false;
+
+          // デフォルトアイコン（🔗）が表示されている
+          if (!container.textContent?.includes("🔗")) return false;
+        }
+
+        return true;
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("複数の異なるサービスのリンクが同時に正しくレンダリングされる", () => {
+    // 定義済みとカスタムサービスが混在するプロフィールジェネレーター
+    const mixedServicesProfileArbitrary = fc.record({
+      id: fc.uuid(),
+      name: fc
+        .string({ minLength: 2, maxLength: 100 })
+        .filter((s) => s.trim().length > 1),
+      jobTitle: fc
+        .string({ minLength: 2, maxLength: 100 })
+        .filter((s) => s.trim().length > 1),
+      bio: fc.option(fc.string({ minLength: 1, maxLength: 500 }), {
+        nil: undefined,
+      }),
+      skills: fc.array(
+        fc
+          .string({ minLength: 1, maxLength: 50 })
+          .filter((s) => s.trim().length > 0),
+        { maxLength: 20 }
+      ),
+      yearsOfExperience: fc.option(fc.integer({ min: 0, max: 100 }), {
+        nil: undefined,
+      }),
+      socialLinks: fc
+        .tuple(
+          // 定義済みサービス
+          fc.array(
+            fc.record({
+              id: fc.uuid(),
+              service: fc.constantFrom(
+                PredefinedService.TWITTER,
+                PredefinedService.GITHUB,
+                PredefinedService.FACEBOOK
+              ),
+              url: fc.webUrl({ validSchemes: ["http", "https"] }),
+            }),
+            { minLength: 1, maxLength: 3 }
+          ),
+          // カスタムサービス
+          fc.array(
+            fc.record({
+              id: fc.uuid(),
+              service: fc
+                .string({ minLength: 2, maxLength: 50 })
+                .filter((s) => s.trim().length > 1)
+                .filter(
+                  (s) =>
+                    s !== PredefinedService.TWITTER &&
+                    s !== PredefinedService.GITHUB &&
+                    s !== PredefinedService.FACEBOOK
+                ),
+              url: fc.webUrl({ validSchemes: ["http", "https"] }),
+            }),
+            { minLength: 1, maxLength: 3 }
+          )
+        )
+        .map(([predefined, custom]) => [...predefined, ...custom]),
+      createdAt: validDateArbitrary,
+      updatedAt: validDateArbitrary,
+    }) as fc.Arbitrary<Profile>;
+
+    fc.assert(
+      fc.property(mixedServicesProfileArbitrary, (profile) => {
+        const { container } = render(
+          <ProfileCard profile={profile} isOwner={false} />
+        );
+
+        const allLinks = container.querySelectorAll("a");
+
+        // すべてのリンクが正しくレンダリングされている
+        for (const socialLink of profile.socialLinks) {
+          // リンク要素が存在する
+          const linkElement = Array.from(allLinks).find(
+            (a) => a.getAttribute("href") === socialLink.url
+          );
+          if (!linkElement) return false;
+
+          // target="_blank"とrel="noopener noreferrer"が設定されている
+          if (linkElement.getAttribute("target") !== "_blank") return false;
+          if (linkElement.getAttribute("rel") !== "noopener noreferrer")
+            return false;
+
+          // サービス名が表示されている
+          if (!container.textContent?.includes(socialLink.service))
+            return false;
+        }
+
+        // リンクの数が正しい
+        return allLinks.length >= profile.socialLinks.length;
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("リンクのURLが正しくエンコードされている", () => {
+    fc.assert(
+      fc.property(profileWithLinksArbitrary, (profile) => {
+        const { container } = render(
+          <ProfileCard profile={profile} isOwner={false} />
+        );
+
+        const allLinks = container.querySelectorAll("a");
+
+        // すべてのリンクのhref属性が元のURLと一致する
+        for (const socialLink of profile.socialLinks) {
+          const linkElement = Array.from(allLinks).find(
+            (a) => a.getAttribute("href") === socialLink.url
+          );
+          if (!linkElement) return false;
+
+          // href属性が正しく設定されている
+          if (linkElement.getAttribute("href") !== socialLink.url) return false;
+        }
+
+        return true;
+      }),
+      { numRuns: 100 }
+    );
+  });
+});
