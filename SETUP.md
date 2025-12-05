@@ -79,7 +79,22 @@ npm run dev
 
 ## 4. データベーススキーマの作成
 
-次のタスク（タスク2）で、Supabaseのデータベーススキーマを作成します。
+### 4.1 SQL Editorでマイグレーションを実行
+
+1. [Supabase Dashboard](https://supabase.com/dashboard)にログイン
+2. プロジェクトを選択
+3. 左サイドバーの「SQL Editor」をクリック
+4. 「New query」をクリック
+5. `supabase/migrations/001_create_profiles_table.sql`の内容をコピー＆ペースト
+6. 「Run」をクリックして実行
+
+### 4.2 実行結果の確認
+
+1. 左サイドバーの「Table Editor」をクリック
+2. `profiles`テーブルが作成されていることを確認
+3. テーブルの構造とRLSポリシーが正しく設定されていることを確認
+
+詳細は `supabase/README.md` を参照してください。
 
 ## その他のコマンド
 
@@ -87,6 +102,7 @@ npm run dev
 
 - `make help` - 利用可能なコマンド一覧を表示
 - `make setup-env` - 環境変数ファイルを作成
+- `make verify-supabase` - Supabase接続とテーブルの存在を確認
 - `make install` - 依存関係をインストール
 - `make dev` - 開発サーバーを起動
 - `make build` - プロダクションビルド

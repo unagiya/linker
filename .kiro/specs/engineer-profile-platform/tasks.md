@@ -8,7 +8,7 @@
   - Supabaseクライアントの初期化（src/lib/supabase.ts）
   - _要件: すべての要件の基盤_
 
-- [ ] 2. データベーススキーマの作成
+- [x] 2. データベーススキーマの作成
   - profilesテーブルの作成（SQL実行）
   - Row Level Security (RLS)の有効化
   - RLSポリシーの作成（SELECT, INSERT, UPDATE, DELETE）

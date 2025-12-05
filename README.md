@@ -63,6 +63,7 @@ make dev
 ```bash
 make help              # コマンド一覧を表示
 make setup-env         # 環境変数ファイルを作成
+make verify-supabase   # Supabase接続とテーブルの存在を確認
 make install           # 依存関係をインストール
 make dev               # 開発サーバーを起動
 make build             # プロダクションビルド

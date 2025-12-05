@@ -1,22 +1,27 @@
-.PHONY: help setup-env install dev build test lint format clean
+.PHONY: help setup-env verify-supabase install dev build test lint format clean
 
 # デフォルトターゲット
 help:
 	@echo "利用可能なコマンド:"
-	@echo "  make setup-env  - 環境変数ファイル(.env.local)を作成"
-	@echo "  make install    - 依存関係をインストール"
-	@echo "  make dev        - 開発サーバーを起動"
-	@echo "  make build      - プロダクションビルド"
-	@echo "  make test       - テストを実行"
-	@echo "  make test-watch - テストをウォッチモードで実行"
-	@echo "  make lint       - ESLintでコードチェック"
-	@echo "  make lint-fix   - ESLintで自動修正"
-	@echo "  make format     - Prettierでコードフォーマット"
-	@echo "  make clean      - ビルド成果物を削除"
+	@echo "  make setup-env      - 環境変数ファイル(.env.local)を作成"
+	@echo "  make verify-supabase - Supabase接続とテーブルの存在を確認"
+	@echo "  make install        - 依存関係をインストール"
+	@echo "  make dev            - 開発サーバーを起動"
+	@echo "  make build          - プロダクションビルド"
+	@echo "  make test           - テストを実行"
+	@echo "  make test-watch     - テストをウォッチモードで実行"
+	@echo "  make lint           - ESLintでコードチェック"
+	@echo "  make lint-fix       - ESLintで自動修正"
+	@echo "  make format         - Prettierでコードフォーマット"
+	@echo "  make clean          - ビルド成果物を削除"
 
 # 環境変数ファイルのセットアップ
 setup-env:
 	@bash scripts/setup-env.sh
+
+# Supabase接続確認
+verify-supabase:
+	@bash scripts/verify-supabase.sh
 
 # 依存関係のインストール
 install:
