@@ -15,10 +15,10 @@ export const socialLinkSchema = z.object({
     .max(50, "サービス名は50文字以内で入力してください"),
   url: z
     .string()
-    .url("有効なURLを入力してください")
-    .refine(
-      (url) => url.startsWith("http://") || url.startsWith("https://"),
-      "URLはhttp://またはhttps://で始まる必要があります"
+    .min(1, "URLは必須です")
+    .regex(
+      /^https?:\/\/.+/,
+      "URLはhttp://またはhttps://で始まる有効な形式で入力してください"
     ),
 });
 
@@ -86,10 +86,10 @@ export const profileFormSchema = z.object({
           .max(50, "サービス名は50文字以内で入力してください"),
         url: z
           .string()
-          .url("有効なURLを入力してください")
-          .refine(
-            (url) => url.startsWith("http://") || url.startsWith("https://"),
-            "URLはhttp://またはhttps://で始まる必要があります"
+          .min(1, "URLは必須です")
+          .regex(
+            /^https?:\/\/.+/,
+            "URLはhttp://またはhttps://で始まる有効な形式で入力してください"
           ),
       })
     )

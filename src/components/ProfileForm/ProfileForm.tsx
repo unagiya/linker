@@ -3,7 +3,7 @@
  * プロフィールの作成・編集フォーム
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { ProfileFormData } from "../../types";
 import { PredefinedService } from "../../types";
 import { validateProfileForm } from "../../utils";
@@ -27,15 +27,17 @@ export function ProfileForm({
   onCancel,
   isSubmitting = false,
 }: ProfileFormProps) {
-  // フォームデータ
-  const [formData, setFormData] = useState<ProfileFormData>({
-    name: "",
-    jobTitle: "",
-    bio: "",
-    skills: [],
-    yearsOfExperience: "",
-    socialLinks: [],
-  });
+  // フォームデータ（初期値を直接設定）
+  const [formData, setFormData] = useState<ProfileFormData>(
+    initialData || {
+      name: "",
+      jobTitle: "",
+      bio: "",
+      skills: [],
+      yearsOfExperience: "",
+      socialLinks: [],
+    }
+  );
 
   // スキル入力用の一時的な値
   const [skillInput, setSkillInput] = useState("");
@@ -47,13 +49,6 @@ export function ProfileForm({
 
   // バリデーションエラー
   const [errors, setErrors] = useState<Record<string, string[]>>({});
-
-  // 初期値の設定
-  useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-    }
-  }, [initialData]);
 
   // フィールド変更ハンドラ
   const handleChange = <K extends keyof ProfileFormData>(
@@ -91,7 +86,7 @@ export function ProfileForm({
   // SNSリンク追加
   const handleAddSocialLink = () => {
     const trimmedUrl = linkUrl.trim();
-    const service = isCustomService ? linkService : linkService;
+    const service = linkService.trim();
 
     if (service && trimmedUrl) {
       const newLink = { service, url: trimmedUrl };

@@ -25,7 +25,7 @@ describe("プロフィール作成フローの統合テスト", () => {
   it("プロフィールを作成し、詳細ページに遷移できる", async () => {
     const user = userEvent.setup();
 
-    const { container } = render(
+    const { container: _container } = render(
       <MemoryRouter initialEntries={["/create"]}>
         <ProfileProvider repository={repository}>
           <Routes>
@@ -116,7 +116,7 @@ describe("プロフィール編集フローの統合テスト", () => {
     const user = userEvent.setup();
 
     // まずプロフィールを作成
-    const { rerender } = render(
+    const { rerender: _rerender } = render(
       <MemoryRouter initialEntries={["/create"]}>
         <ProfileProvider repository={repository}>
           <Routes>
@@ -140,7 +140,7 @@ describe("プロフィール編集フローの統合テスト", () => {
 
     // プロフィールIDを取得
     const profiles = await repository.findAll();
-    const profileId = profiles[0].id;
+    const _profileId = profiles[0].id;
 
     // 編集ボタンをクリック
     const editButton = screen.getByRole("button", { name: /編集/i });
@@ -180,7 +180,7 @@ describe("プロフィール削除フローの統合テスト", () => {
     const user = userEvent.setup();
 
     // プロフィールを作成
-    const { rerender } = render(
+    const { rerender: _rerender } = render(
       <MemoryRouter initialEntries={["/create"]}>
         <ProfileProvider repository={repository}>
           <Routes>
@@ -204,7 +204,7 @@ describe("プロフィール削除フローの統合テスト", () => {
     // プロフィールIDを取得
     const profiles = await repository.findAll();
     expect(profiles).toHaveLength(1);
-    const profileId = profiles[0].id;
+    const _profileId = profiles[0].id;
 
     // 削除ボタンをクリック
     const deleteButton = screen.getByRole("button", { name: /削除/i });

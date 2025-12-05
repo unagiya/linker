@@ -77,7 +77,7 @@ describe("ProfileForm", () => {
     });
 
     it("送信中はボタンが無効化される", async () => {
-      const user = userEvent.setup();
+      const _user = userEvent.setup();
       const onSubmit = vi.fn().mockImplementation(
         () => new Promise((resolve) => setTimeout(resolve, 100))
       );

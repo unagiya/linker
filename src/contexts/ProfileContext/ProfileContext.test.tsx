@@ -203,8 +203,10 @@ describe("ProfileContext", () => {
       await act(async () => {
         try {
           await result.current.createProfile(formData);
+          expect.unreachable("エラーが発生するはずです");
         } catch (error) {
           // エラーは期待される
+          expect(error).toBeDefined();
         }
       });
 
@@ -266,8 +268,10 @@ describe("ProfileContext", () => {
       await act(async () => {
         try {
           await result.current.updateProfile("non-existent-id", formData);
+          expect.unreachable("エラーが発生するはずです");
         } catch (error) {
           // エラーは期待される
+          expect(error).toBeDefined();
         }
       });
 
@@ -332,8 +336,10 @@ describe("ProfileContext", () => {
       await act(async () => {
         try {
           await result.current.updateProfile(createdProfile!.id, formData);
+          expect.unreachable("エラーが発生するはずです");
         } catch (error) {
           // エラーは期待される
+          expect(error).toBeDefined();
         }
       });
 
@@ -389,8 +395,10 @@ describe("ProfileContext", () => {
       await act(async () => {
         try {
           await result.current.deleteProfile(createdProfile!.id);
+          expect.unreachable("エラーが発生するはずです");
         } catch (error) {
           // エラーは期待される
+          expect(error).toBeDefined();
         }
       });
 
@@ -476,8 +484,10 @@ describe("ProfileContext", () => {
       await act(async () => {
         try {
           await result.current.createProfile(createTestFormData());
+          expect.unreachable("エラーが発生するはずです");
         } catch (error) {
           // エラーは期待される
+          expect(error).toBeDefined();
         }
       });
 

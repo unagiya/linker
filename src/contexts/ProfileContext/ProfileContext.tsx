@@ -207,6 +207,7 @@ export function ProfileProvider({
 /**
  * ProfileContextを使用するカスタムフック
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useProfileContext(): ProfileContextValue {
   const context = useContext(ProfileContext);
   if (context === undefined) {

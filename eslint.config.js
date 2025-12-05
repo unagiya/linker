@@ -30,4 +30,16 @@ export default defineConfig([
       },
     },
   },
+  // テストファイル用の設定
+  {
+    files: ['**/*.test.{ts,tsx}', '**/*.property.test.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', { 
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+      }],
+      '@typescript-eslint/no-explicit-any': 'off',
+      'react/display-name': 'off',
+    },
+  },
 ])

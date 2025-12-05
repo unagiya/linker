@@ -4,13 +4,13 @@
 
 import { describe, it, beforeEach } from "vitest";
 import * as fc from "fast-check";
-import { render, renderHook, waitFor } from "@testing-library/react";
-import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
+import { render as _render, renderHook, waitFor } from "@testing-library/react";
+import { MemoryRouter as _MemoryRouter, Routes as _Routes, Route as _Route, useLocation as _useLocation } from "react-router-dom";
 import { ProfileProvider, useProfileContext } from "../../contexts/ProfileContext";
 import { LocalStorageRepository } from "../../repositories";
 import type { ProfileFormData } from "../../types";
 import type { ReactNode } from "react";
-import { CreateProfile } from "./CreateProfile";
+import { CreateProfile as _CreateProfile } from "./CreateProfile";
 
 /**
  * Feature: engineer-profile-platform, Property 1: 有効なプロフィール作成の永続化

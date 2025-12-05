@@ -4,7 +4,7 @@
 
 import { describe, it, beforeEach, afterEach } from "vitest";
 import * as fc from "fast-check";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen as _screen, waitFor, cleanup } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { ProfileProvider } from "../../contexts/ProfileContext";
 import { LocalStorageRepository } from "../../repositories";
