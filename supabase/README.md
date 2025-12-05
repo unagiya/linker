@@ -2,9 +2,39 @@
 
 このディレクトリには、Supabaseデータベースのマイグレーションファイルが含まれています。
 
+## マイグレーションファイルの命名規則
+
+マイグレーションファイルは、Supabaseの標準形式に従って命名する必要があります：
+
+```
+YYYYMMDDHHMMSS_description.sql
+```
+
+**形式の説明：**
+- `YYYYMMDD`: 年月日（例: 20251205）
+- `HHMMSS`: 時分秒（例: 183531）
+- `description`: マイグレーションの説明（スネークケース、例: create_profiles_table）
+
+**例：**
+- `20251205183531_create_profiles_table.sql`
+- `20251205190000_add_avatar_to_profiles.sql`
+- `20251206120000_create_comments_table.sql`
+
+**タイムスタンプの生成方法：**
+
+```bash
+# 日本時間でタイムスタンプを生成
+TZ=Asia/Tokyo date +%Y%m%d%H%M%S
+```
+
+**重要な注意事項：**
+- タイムスタンプは作成順序を保証するため、必ず現在時刻を使用してください
+- 同じタイムスタンプを持つ複数のマイグレーションファイルを作成しないでください
+- ファイル名の説明部分は、マイグレーションの内容を明確に表すものにしてください
+
 ## マイグレーションファイル
 
-### 001_create_profiles_table.sql
+### 20251205183531_create_profiles_table.sql
 
 プロフィールテーブルとRow Level Security (RLS)ポリシーを作成します。
 
@@ -17,7 +47,22 @@
 
 ## マイグレーションの実行方法
 
-### 方法1: Supabase SQL Editorを使用（推奨）
+### 方法1: Supabase CLIを使用（推奨）
+
+プロジェクトにはSupabase CLIが含まれています。以下のコマンドで簡単にマイグレーションを実行できます：
+
+```bash
+# 1. Supabaseプロジェクトにリンク（初回のみ）
+make supabase-link
+
+# 2. マイグレーションを実行
+make supabase-migrate
+
+# 3. マイグレーション状態を確認
+make supabase-status
+```
+
+### 方法2: Supabase SQL Editorを使用
 
 1. [Supabase Dashboard](https://supabase.com/dashboard)にログイン
 2. プロジェクトを選択
@@ -25,21 +70,6 @@
 4. 「New query」をクリック
 5. マイグレーションファイルの内容をコピー＆ペースト
 6. 「Run」をクリックして実行
-
-### 方法2: Supabase CLIを使用
-
-Supabase CLIをインストールしている場合：
-
-```bash
-# Supabase CLIのインストール（未インストールの場合）
-npm install -g supabase
-
-# プロジェクトの初期化
-supabase init
-
-# マイグレーションの実行
-supabase db push
-```
 
 ## テーブル構造
 

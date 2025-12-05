@@ -32,7 +32,19 @@ make setup-env
 make install
 ```
 
-### 3. 開発サーバーの起動
+### 3. Supabaseプロジェクトにリンク
+
+```bash
+make supabase-link
+```
+
+### 4. マイグレーションを実行
+
+```bash
+make supabase-migrate
+```
+
+### 5. 開発サーバーの起動
 
 ```bash
 make dev
@@ -61,18 +73,32 @@ make dev
 ## 利用可能なコマンド
 
 ```bash
-make help              # コマンド一覧を表示
+# セットアップ
 make setup-env         # 環境変数ファイルを作成
-make verify-supabase   # Supabase接続とテーブルの存在を確認
+make supabase-link     # Supabaseプロジェクトにリンク
 make install           # 依存関係をインストール
+
+# マイグレーション
+make supabase-migrate  # マイグレーションを実行
+make supabase-status   # マイグレーション状態を確認
+make supabase-reset    # ローカルDBをリセット
+
+# 開発
 make dev               # 開発サーバーを起動
 make build             # プロダクションビルド
+
+# テスト
 make test              # テストを実行
 make test-watch        # テストをウォッチモードで実行
+
+# コード品質
 make lint              # ESLintでコードチェック
 make lint-fix          # ESLintで自動修正
 make format            # Prettierでコードフォーマット
+
+# その他
 make clean             # ビルド成果物を削除
+make help              # コマンド一覧を表示
 ```
 
 ## プロジェクト構造

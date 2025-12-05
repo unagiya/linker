@@ -77,18 +77,31 @@ npm run dev
 
 ブラウザで `http://localhost:5173` にアクセスしてアプリケーションを確認できます。
 
-## 4. データベーススキーマの作成
+## 4. Supabaseプロジェクトにリンク
 
-### 4.1 SQL Editorでマイグレーションを実行
+```bash
+make supabase-link
+```
 
-1. [Supabase Dashboard](https://supabase.com/dashboard)にログイン
-2. プロジェクトを選択
-3. 左サイドバーの「SQL Editor」をクリック
-4. 「New query」をクリック
-5. `supabase/migrations/001_create_profiles_table.sql`の内容をコピー＆ペースト
-6. 「Run」をクリックして実行
+プロジェクトIDを入力してください（Supabase Dashboard > Settings > General で確認できます）。
 
-### 4.2 実行結果の確認
+## 5. データベーススキーマの作成
+
+### 5.1 マイグレーションを実行
+
+```bash
+make supabase-migrate
+```
+
+このコマンドで`supabase/migrations/`内のマイグレーションファイルが実行されます。
+
+### 5.2 実行結果の確認
+
+```bash
+make supabase-status
+```
+
+または、Supabase Dashboardで確認：
 
 1. 左サイドバーの「Table Editor」をクリック
 2. `profiles`テーブルが作成されていることを確認
@@ -100,17 +113,31 @@ npm run dev
 
 ### Makefileコマンド
 
-- `make help` - 利用可能なコマンド一覧を表示
+**セットアップ:**
 - `make setup-env` - 環境変数ファイルを作成
-- `make verify-supabase` - Supabase接続とテーブルの存在を確認
+- `make supabase-init` - Supabaseプロジェクトを初期化
+- `make supabase-link` - Supabaseプロジェクトにリンク
+
+**マイグレーション:**
+- `make supabase-migrate` - マイグレーションを実行
+- `make supabase-status` - マイグレーション状態を確認
+- `make supabase-reset` - ローカルDBをリセット
+
+**開発:**
 - `make install` - 依存関係をインストール
 - `make dev` - 開発サーバーを起動
 - `make build` - プロダクションビルド
+
+**テスト:**
 - `make test` - テスト実行
 - `make test-watch` - テストをウォッチモードで実行
+
+**コード品質:**
 - `make lint` - ESLintでコードチェック
 - `make lint-fix` - ESLintで自動修正
 - `make format` - Prettierでコードフォーマット
+
+**その他:**
 - `make clean` - ビルド成果物を削除
 
 ### npmコマンド
