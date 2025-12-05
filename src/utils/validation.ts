@@ -6,6 +6,33 @@
 import { z } from "zod";
 
 /**
+ * アカウント登録用のバリデーションスキーマ
+ */
+export const signUpSchema = z.object({
+  email: z
+    .string()
+    .min(1, "メールアドレスは必須です")
+    .email("有効なメールアドレスを入力してください"),
+  password: z
+    .string()
+    .min(6, "パスワードは6文字以上で入力してください")
+    .max(100, "パスワードは100文字以内で入力してください"),
+});
+
+/**
+ * ログイン用のバリデーションスキーマ
+ */
+export const signInSchema = z.object({
+  email: z
+    .string()
+    .min(1, "メールアドレスは必須です")
+    .email("有効なメールアドレスを入力してください"),
+  password: z
+    .string()
+    .min(1, "パスワードを入力してください"),
+});
+
+/**
  * SNSリンクのバリデーションスキーマ
  */
 export const socialLinkSchema = z.object({
@@ -213,4 +240,58 @@ export function parseYearsOfExperience(value: string): number | undefined {
   }
 
   return parsed;
+}
+
+/**
+ * アカウント登録データをバリデーションする
+ * @param data バリデーション対象のデータ
+ * @returns バリデーション結果
+ */
+export function validateSignUp(
+  data: unknown
+): ValidationResult<z.infer<typeof signUpSchema>> {
+  const result = signUpSchema.safeParse(data);
+
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+
+  // エラーをフィールドごとに整理
+  const errors: Record<string, string[]> = {};
+  result.error.issues.forEach((error) => {
+    const path = error.path.join(".");
+    if (!errors[path]) {
+      errors[path] = [];
+    }
+    errors[path].push(error.message);
+  });
+
+  return { success: false, errors };
+}
+
+/**
+ * ログインデータをバリデーションする
+ * @param data バリデーション対象のデータ
+ * @returns バリデーション結果
+ */
+export function validateSignIn(
+  data: unknown
+): ValidationResult<z.infer<typeof signInSchema>> {
+  const result = signInSchema.safeParse(data);
+
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+
+  // エラーをフィールドごとに整理
+  const errors: Record<string, string[]> = {};
+  result.error.issues.forEach((error) => {
+    const path = error.path.join(".");
+    if (!errors[path]) {
+      errors[path] = [];
+    }
+    errors[path].push(error.message);
+  });
+
+  return { success: false, errors };
 }

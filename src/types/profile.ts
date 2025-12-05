@@ -41,6 +41,8 @@ export interface SocialLink {
 export interface Profile {
   /** 一意のID（UUID） */
   id: string;
+  /** 所有者のユーザーID（Supabase Auth） */
+  user_id: string;
   /** 名前（必須） */
   name: string;
   /** 職種（必須） */

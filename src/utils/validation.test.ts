@@ -7,9 +7,129 @@ import {
   validateProfile,
   validateProfileForm,
   validateSocialLink,
+  validateSignUp,
+  validateSignIn,
   isValidUrl,
   parseYearsOfExperience,
 } from "./validation";
+
+describe("validateSignUp", () => {
+  it("有効なメールアドレスとパスワードを受け入れる", () => {
+    const result = validateSignUp({
+      email: "user@example.com",
+      password: "password123",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.email).toBe("user@example.com");
+      expect(result.data.password).toBe("password123");
+    }
+  });
+
+  it("無効なメールアドレスの場合エラーを返す", () => {
+    const result = validateSignUp({
+      email: "invalid-email",
+      password: "password123",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.email).toBeDefined();
+      expect(result.errors.email[0]).toContain("有効なメールアドレス");
+    }
+  });
+
+  it("短すぎるパスワード（6文字未満）の場合エラーを返す", () => {
+    const result = validateSignUp({
+      email: "user@example.com",
+      password: "12345",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.password).toBeDefined();
+      expect(result.errors.password[0]).toContain("6文字以上");
+    }
+  });
+
+  it("メールアドレスが空の場合エラーを返す", () => {
+    const result = validateSignUp({
+      email: "",
+      password: "password123",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.email).toBeDefined();
+    }
+  });
+
+  it("パスワードが空の場合エラーを返す", () => {
+    const result = validateSignUp({
+      email: "user@example.com",
+      password: "",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.password).toBeDefined();
+    }
+  });
+});
+
+describe("validateSignIn", () => {
+  it("有効なメールアドレスとパスワードを受け入れる", () => {
+    const result = validateSignIn({
+      email: "user@example.com",
+      password: "password123",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.email).toBe("user@example.com");
+      expect(result.data.password).toBe("password123");
+    }
+  });
+
+  it("無効なメールアドレスの場合エラーを返す", () => {
+    const result = validateSignIn({
+      email: "invalid-email",
+      password: "password123",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.email).toBeDefined();
+      expect(result.errors.email[0]).toContain("有効なメールアドレス");
+    }
+  });
+
+  it("パスワードが空の場合エラーを返す", () => {
+    const result = validateSignIn({
+      email: "user@example.com",
+      password: "",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.password).toBeDefined();
+      expect(result.errors.password[0]).toContain("パスワードを入力");
+    }
+  });
+
+  it("メールアドレスが空の場合エラーを返す", () => {
+    const result = validateSignIn({
+      email: "",
+      password: "password123",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.errors.email).toBeDefined();
+    }
+  });
+});
 
 describe("isValidUrl", () => {
   it("有効なHTTP URLを受け入れる", () => {
