@@ -34,7 +34,7 @@
   - エラーハンドリングの実装
   - _要件: 5.1, 5.2, 5.3, 5.4_
 
-- [ ]* 3.1 LocalStorageRepositoryのユニットテストを作成
+- [x]* 3.1 LocalStorageRepositoryのユニットテストを作成
   - 各メソッドのテスト（save, findById, findAll, delete, exists）
   - エラーケースのテスト
   - _要件: 5.1, 5.2, 5.3, 5.4_
