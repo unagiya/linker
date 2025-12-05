@@ -1,0 +1,5 @@
+/**
+ * ErrorBoundaryのエクスポート
+ */
+
+export * from "./ErrorBoundary";
