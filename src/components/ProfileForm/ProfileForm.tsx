@@ -3,331 +3,410 @@
  * プロフィールの作成・編集フォーム
  */
 
-import { useState } from "react";
-import type { ProfileFormData } from "../../types";
-import { PredefinedService } from "../../types";
-import { validateProfileForm } from "../../utils";
-import { Button, Input, TextArea } from "../common";
+import { useState, useEffect } from "react";
+import type { FormEvent } from "react";
+import { Input } from "../common/Input";
+import { TextArea } from "../common/TextArea";
+import { Button } from "../common/Button";
+import { ErrorMessage } from "../common/ErrorMessage";
+import { validateProfileForm } from "../../utils/validation";
+import { PredefinedService } from "../../types/profile";
+import type { ProfileFormData } from "../../types/profile";
 import "./ProfileForm.css";
 
 interface ProfileFormProps {
   /** 初期値（編集時） */
-  initialData?: ProfileFormData;
+  initialData?: Partial<ProfileFormData>;
   /** 送信ハンドラ */
   onSubmit: (data: ProfileFormData) => Promise<void>;
   /** キャンセルハンドラ */
   onCancel?: () => void;
-  /** 送信中フラグ */
-  isSubmitting?: boolean;
+  /** ローディング状態 */
+  loading?: boolean;
+  /** エラーメッセージ */
+  error?: string | null;
 }
 
 export function ProfileForm({
   initialData,
   onSubmit,
   onCancel,
-  isSubmitting = false,
+  loading = false,
+  error = null,
 }: ProfileFormProps) {
-  // フォームデータ（初期値を直接設定）
-  const [formData, setFormData] = useState<ProfileFormData>(
-    initialData || {
-      name: "",
-      jobTitle: "",
-      bio: "",
-      skills: [],
-      yearsOfExperience: "",
-      socialLinks: [],
-    }
-  );
-
-  // スキル入力用の一時的な値
+  // フォームの状態
+  const [name, setName] = useState(initialData?.name || "");
+  const [jobTitle, setJobTitle] = useState(initialData?.jobTitle || "");
+  const [bio, setBio] = useState(initialData?.bio || "");
+  const [skills, setSkills] = useState<string[]>(initialData?.skills || []);
   const [skillInput, setSkillInput] = useState("");
-
-  // SNSリンク入力用の一時的な値
-  const [linkService, setLinkService] = useState<string>(PredefinedService.TWITTER);
-  const [linkUrl, setLinkUrl] = useState("");
-  const [isCustomService, setIsCustomService] = useState(false);
+  const [yearsOfExperience, setYearsOfExperience] = useState(
+    initialData?.yearsOfExperience || ""
+  );
+  const [socialLinks, setSocialLinks] = useState<
+    Array<{ service: string; url: string }>
+  >(initialData?.socialLinks || []);
 
   // バリデーションエラー
-  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string[]>
+  >({});
 
-  // フィールド変更ハンドラ
-  const handleChange = <K extends keyof ProfileFormData>(
-    field: K,
-    value: ProfileFormData[K]
-  ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // エラーをクリア
-    if (errors[field]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
+  // 初期データが変更されたらフォームを更新
+  useEffect(() => {
+    if (initialData) {
+      setName(initialData.name || "");
+      setJobTitle(initialData.jobTitle || "");
+      setBio(initialData.bio || "");
+      setSkills(initialData.skills || []);
+      setYearsOfExperience(initialData.yearsOfExperience || "");
+      setSocialLinks(initialData.socialLinks || []);
     }
-  };
+  }, [initialData]);
 
-  // スキル追加
-  const handleAddSkill = () => {
-    const trimmedSkill = skillInput.trim();
-    if (trimmedSkill && !formData.skills.includes(trimmedSkill)) {
-      handleChange("skills", [...formData.skills, trimmedSkill]);
-      setSkillInput("");
-    }
-  };
-
-  // スキル削除
-  const handleRemoveSkill = (index: number) => {
-    handleChange(
-      "skills",
-      formData.skills.filter((_, i) => i !== index)
-    );
-  };
-
-  // SNSリンク追加
-  const handleAddSocialLink = () => {
-    const trimmedUrl = linkUrl.trim();
-    const service = linkService.trim();
-
-    if (service && trimmedUrl) {
-      const newLink = { service, url: trimmedUrl };
-      handleChange("socialLinks", [...formData.socialLinks, newLink]);
-      setLinkUrl("");
-      setLinkService(PredefinedService.TWITTER);
-      setIsCustomService(false);
-    }
-  };
-
-  // SNSリンク削除
-  const handleRemoveSocialLink = (index: number) => {
-    handleChange(
-      "socialLinks",
-      formData.socialLinks.filter((_, i) => i !== index)
-    );
-  };
-
-  // サービス選択変更
-  const handleServiceChange = (value: string) => {
-    if (value === "custom") {
-      setIsCustomService(true);
-      setLinkService("");
-    } else {
-      setIsCustomService(false);
-      setLinkService(value);
-    }
-  };
-
-  // フォーム送信
-  const handleSubmit = async (e: React.FormEvent) => {
+  /**
+   * フォーム送信ハンドラ
+   */
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    const formData: ProfileFormData = {
+      name,
+      jobTitle,
+      bio,
+      skills,
+      yearsOfExperience,
+      socialLinks,
+    };
+
     // バリデーション
-    const result = validateProfileForm(formData);
-    if (!result.success) {
-      setErrors(result.errors);
+    const validationResult = validateProfileForm(formData);
+
+    if (!validationResult.success) {
+      setValidationErrors(validationResult.errors);
       return;
     }
 
+    // バリデーションエラーをクリア
+    setValidationErrors({});
+
+    // 送信
     try {
       await onSubmit(formData);
     } catch (error) {
-      console.error("フォーム送信エラー:", error);
+      // エラーは親コンポーネントで処理される
+    }
+  };
+
+  /**
+   * スキル追加ハンドラ
+   */
+  const handleAddSkill = () => {
+    const trimmedSkill = skillInput.trim();
+    if (trimmedSkill && !skills.includes(trimmedSkill)) {
+      if (skills.length >= 20) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          skills: ["スキルは20個まで登録できます"],
+        }));
+        return;
+      }
+      setSkills([...skills, trimmedSkill]);
+      setSkillInput("");
+      // エラーをクリア
+      if (validationErrors.skills) {
+        const newErrors = { ...validationErrors };
+        delete newErrors.skills;
+        setValidationErrors(newErrors);
+      }
+    }
+  };
+
+  /**
+   * スキル削除ハンドラ
+   */
+  const handleRemoveSkill = (index: number) => {
+    setSkills(skills.filter((_, i) => i !== index));
+    // エラーをクリア
+    if (validationErrors.skills) {
+      const newErrors = { ...validationErrors };
+      delete newErrors.skills;
+      setValidationErrors(newErrors);
+    }
+  };
+
+  /**
+   * スキル入力でEnterキーが押されたときの処理
+   */
+  const handleSkillKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddSkill();
+    }
+  };
+
+  /**
+   * SNSリンク追加ハンドラ
+   */
+  const handleAddSocialLink = () => {
+    if (socialLinks.length >= 10) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        socialLinks: ["SNSリンクは10個まで登録できます"],
+      }));
+      return;
+    }
+    setSocialLinks([...socialLinks, { service: "", url: "" }]);
+  };
+
+  /**
+   * SNSリンク削除ハンドラ
+   */
+  const handleRemoveSocialLink = (index: number) => {
+    setSocialLinks(socialLinks.filter((_, i) => i !== index));
+    // エラーをクリア
+    const newErrors = { ...validationErrors };
+    delete newErrors[`socialLinks.${index}.service`];
+    delete newErrors[`socialLinks.${index}.url`];
+    setValidationErrors(newErrors);
+  };
+
+  /**
+   * SNSリンクのサービス変更ハンドラ
+   */
+  const handleSocialLinkServiceChange = (index: number, value: string) => {
+    const newLinks = [...socialLinks];
+    newLinks[index] = { ...newLinks[index], service: value };
+    setSocialLinks(newLinks);
+    // エラーをクリア
+    if (validationErrors[`socialLinks.${index}.service`]) {
+      const newErrors = { ...validationErrors };
+      delete newErrors[`socialLinks.${index}.service`];
+      setValidationErrors(newErrors);
+    }
+  };
+
+  /**
+   * SNSリンクのURL変更ハンドラ
+   */
+  const handleSocialLinkUrlChange = (index: number, value: string) => {
+    const newLinks = [...socialLinks];
+    newLinks[index] = { ...newLinks[index], url: value };
+    setSocialLinks(newLinks);
+    // エラーをクリア
+    if (validationErrors[`socialLinks.${index}.url`]) {
+      const newErrors = { ...validationErrors };
+      delete newErrors[`socialLinks.${index}.url`];
+      setValidationErrors(newErrors);
     }
   };
 
   return (
-    <form className="profile-form" onSubmit={handleSubmit}>
-      {/* 基本情報 */}
-      <div className="profile-form-section">
-        <h2 className="profile-form-section-title">基本情報</h2>
+    <div className="profile-form-container">
+      <div className="profile-form-card">
+        <h1 className="profile-form-title">
+          {initialData ? "プロフィール編集" : "プロフィール作成"}
+        </h1>
 
-        <Input
-          label="名前"
-          required
-          value={formData.name}
-          onChange={(e) => handleChange("name", e.target.value)}
-          error={errors.name?.[0]}
-          disabled={isSubmitting}
-        />
+        {error && <ErrorMessage message={error} />}
 
-        <Input
-          label="職種"
-          required
-          value={formData.jobTitle}
-          onChange={(e) => handleChange("jobTitle", e.target.value)}
-          error={errors.jobTitle?.[0]}
-          disabled={isSubmitting}
-        />
-
-        <TextArea
-          label="自己紹介"
-          value={formData.bio}
-          onChange={(e) => handleChange("bio", e.target.value)}
-          error={errors.bio?.[0]}
-          disabled={isSubmitting}
-          placeholder="あなたについて教えてください"
-        />
-
-        <Input
-          label="経験年数"
-          type="number"
-          min="0"
-          max="100"
-          value={formData.yearsOfExperience}
-          onChange={(e) => handleChange("yearsOfExperience", e.target.value)}
-          error={errors.yearsOfExperience?.[0]}
-          disabled={isSubmitting}
-        />
-      </div>
-
-      {/* スキル */}
-      <div className="profile-form-section">
-        <h2 className="profile-form-section-title">スキル</h2>
-
-        <div className="profile-form-skill-input">
+        <form onSubmit={handleSubmit} className="profile-form">
+          {/* 名前 */}
           <Input
-            label="スキルを追加"
-            value={skillInput}
-            onChange={(e) => setSkillInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAddSkill();
-              }
-            }}
-            disabled={isSubmitting}
-            placeholder="例: React, TypeScript"
+            label="名前"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            error={validationErrors.name?.[0]}
+            required
+            disabled={loading}
+            placeholder="山田太郎"
           />
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleAddSkill}
-            disabled={isSubmitting || !skillInput.trim()}
-          >
-            追加
-          </Button>
-        </div>
 
-        {formData.skills.length > 0 && (
-          <div className="profile-form-tags">
-            {formData.skills.map((skill, index) => (
-              <div key={index} className="profile-form-tag">
-                <span>{skill}</span>
-                <button
-                  type="button"
-                  className="profile-form-tag-remove"
-                  onClick={() => handleRemoveSkill(index)}
-                  disabled={isSubmitting}
-                  aria-label={`${skill}を削除`}
-                >
-                  ×
-                </button>
+          {/* 職種 */}
+          <Input
+            label="職種"
+            type="text"
+            value={jobTitle}
+            onChange={(e) => setJobTitle(e.target.value)}
+            error={validationErrors.jobTitle?.[0]}
+            required
+            disabled={loading}
+            placeholder="フロントエンドエンジニア"
+          />
+
+          {/* 自己紹介 */}
+          <TextArea
+            label="自己紹介"
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            error={validationErrors.bio?.[0]}
+            disabled={loading}
+            placeholder="あなたの経験やスキルについて教えてください"
+            rows={4}
+          />
+
+          {/* 経験年数 */}
+          <Input
+            label="経験年数"
+            type="number"
+            value={yearsOfExperience}
+            onChange={(e) => setYearsOfExperience(e.target.value)}
+            error={validationErrors.yearsOfExperience?.[0]}
+            disabled={loading}
+            placeholder="5"
+            min="0"
+            max="100"
+          />
+
+          {/* スキル */}
+          <div className="profile-form-section">
+            <label className="profile-form-section-label">スキル</label>
+            <div className="profile-form-skill-input">
+              <Input
+                type="text"
+                value={skillInput}
+                onChange={(e) => setSkillInput(e.target.value)}
+                onKeyDown={handleSkillKeyDown}
+                disabled={loading}
+                placeholder="スキルを入力してEnter"
+              />
+              <Button
+                type="button"
+                onClick={handleAddSkill}
+                disabled={loading || !skillInput.trim()}
+                variant="secondary"
+              >
+                追加
+              </Button>
+            </div>
+            {validationErrors.skills && (
+              <span className="profile-form-error" role="alert">
+                {validationErrors.skills[0]}
+              </span>
+            )}
+            {skills.length > 0 && (
+              <div className="profile-form-skill-tags">
+                {skills.map((skill, index) => (
+                  <div key={index} className="profile-form-skill-tag">
+                    <span>{skill}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(index)}
+                      disabled={loading}
+                      className="profile-form-skill-tag-remove"
+                      aria-label={`${skill}を削除`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-        {errors.skills?.[0] && (
-          <span className="profile-form-error">{errors.skills[0]}</span>
-        )}
-      </div>
-
-      {/* SNSリンク */}
-      <div className="profile-form-section">
-        <h2 className="profile-form-section-title">SNS・外部リンク</h2>
-
-        <div className="profile-form-social-input">
-          <div className="profile-form-social-service">
-            <label htmlFor="service-select" className="profile-form-label">
-              サービス
-            </label>
-            <select
-              id="service-select"
-              className="profile-form-select"
-              value={isCustomService ? "custom" : linkService}
-              onChange={(e) => handleServiceChange(e.target.value)}
-              disabled={isSubmitting}
-            >
-              <option value={PredefinedService.TWITTER}>Twitter</option>
-              <option value={PredefinedService.GITHUB}>GitHub</option>
-              <option value={PredefinedService.FACEBOOK}>Facebook</option>
-              <option value="custom">その他</option>
-            </select>
+            )}
           </div>
 
-          {isCustomService && (
-            <Input
-              label="カスタムサービス名"
-              value={linkService}
-              onChange={(e) => setLinkService(e.target.value)}
-              disabled={isSubmitting}
-              placeholder="例: LinkedIn"
-            />
-          )}
-
-          <Input
-            label="URL"
-            type="url"
-            value={linkUrl}
-            onChange={(e) => setLinkUrl(e.target.value)}
-            disabled={isSubmitting}
-            placeholder="https://example.com"
-          />
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleAddSocialLink}
-            disabled={
-              isSubmitting || !linkService.trim() || !linkUrl.trim()
-            }
-          >
-            リンクを追加
-          </Button>
-        </div>
-
-        {formData.socialLinks.length > 0 && (
-          <div className="profile-form-links">
-            {formData.socialLinks.map((link, index) => (
-              <div key={index} className="profile-form-link">
-                <div className="profile-form-link-info">
-                  <span className="profile-form-link-service">
-                    {link.service}
-                  </span>
-                  <span className="profile-form-link-url">{link.url}</span>
+          {/* SNSリンク */}
+          <div className="profile-form-section">
+            <label className="profile-form-section-label">SNS・外部リンク</label>
+            {socialLinks.map((link, index) => (
+              <div key={index} className="profile-form-social-link">
+                <div className="profile-form-social-link-inputs">
+                  <div className="profile-form-social-link-service">
+                    <select
+                      value={link.service}
+                      onChange={(e) =>
+                        handleSocialLinkServiceChange(index, e.target.value)
+                      }
+                      disabled={loading}
+                      className="profile-form-select"
+                      aria-label="サービス選択"
+                    >
+                      <option value="">サービスを選択</option>
+                      <option value={PredefinedService.TWITTER}>Twitter</option>
+                      <option value={PredefinedService.GITHUB}>GitHub</option>
+                      <option value={PredefinedService.FACEBOOK}>
+                        Facebook
+                      </option>
+                      <option value="custom">その他</option>
+                    </select>
+                    {link.service === "custom" && (
+                      <Input
+                        type="text"
+                        value={link.service === "custom" ? "" : link.service}
+                        onChange={(e) =>
+                          handleSocialLinkServiceChange(index, e.target.value)
+                        }
+                        disabled={loading}
+                        placeholder="サービス名を入力"
+                        error={
+                          validationErrors[`socialLinks.${index}.service`]?.[0]
+                        }
+                      />
+                    )}
+                    {validationErrors[`socialLinks.${index}.service`] && (
+                      <span className="profile-form-error" role="alert">
+                        {validationErrors[`socialLinks.${index}.service`][0]}
+                      </span>
+                    )}
+                  </div>
+                  <div className="profile-form-social-link-url">
+                    <Input
+                      type="url"
+                      value={link.url}
+                      onChange={(e) =>
+                        handleSocialLinkUrlChange(index, e.target.value)
+                      }
+                      disabled={loading}
+                      placeholder="https://example.com"
+                      error={validationErrors[`socialLinks.${index}.url`]?.[0]}
+                    />
+                  </div>
                 </div>
-                <button
+                <Button
                   type="button"
-                  className="profile-form-link-remove"
                   onClick={() => handleRemoveSocialLink(index)}
-                  disabled={isSubmitting}
-                  aria-label={`${link.service}のリンクを削除`}
+                  disabled={loading}
+                  variant="danger"
+                  aria-label="リンクを削除"
                 >
                   削除
-                </button>
+                </Button>
               </div>
             ))}
+            {validationErrors.socialLinks && (
+              <span className="profile-form-error" role="alert">
+                {validationErrors.socialLinks[0]}
+              </span>
+            )}
+            <Button
+              type="button"
+              onClick={handleAddSocialLink}
+              disabled={loading || socialLinks.length >= 10}
+              variant="secondary"
+            >
+              リンクを追加
+            </Button>
           </div>
-        )}
-        {errors.socialLinks?.[0] && (
-          <span className="profile-form-error">{errors.socialLinks[0]}</span>
-        )}
-      </div>
 
-      {/* アクションボタン */}
-      <div className="profile-form-actions">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            キャンセル
-          </Button>
-        )}
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "保存中..." : "保存"}
-        </Button>
+          {/* 送信ボタン */}
+          <div className="profile-form-actions">
+            <Button type="submit" fullWidth disabled={loading}>
+              {loading ? "保存中..." : "保存"}
+            </Button>
+            {onCancel && (
+              <Button
+                type="button"
+                onClick={onCancel}
+                disabled={loading}
+                variant="secondary"
+                fullWidth
+              >
+                キャンセル
+              </Button>
+            )}
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   );
 }

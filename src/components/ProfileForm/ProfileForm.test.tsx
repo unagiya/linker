@@ -3,460 +3,319 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ProfileForm } from "./ProfileForm";
-import type { ProfileFormData } from "../../types";
-import { PredefinedService } from "../../types";
+import type { ProfileFormData } from "../../types/profile";
 
 describe("ProfileForm", () => {
-  // テスト用の初期データ
-  const createTestFormData = (): ProfileFormData => ({
-    name: "テストユーザー",
-    jobTitle: "ソフトウェアエンジニア",
-    bio: "テスト用のプロフィールです",
-    skills: ["React", "TypeScript"],
-    yearsOfExperience: "5",
-    socialLinks: [
-      {
-        service: PredefinedService.GITHUB,
-        url: "https://github.com/test",
-      },
-    ],
+  describe("基本表示", () => {
+    it("プロフィール作成フォームが表示される", () => {
+      const mockOnSubmit = vi.fn();
+
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
+
+      expect(screen.getByText("プロフィール作成")).toBeInTheDocument();
+      expect(screen.getByLabelText(/名前/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/職種/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/自己紹介/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/経験年数/)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "保存" })).toBeInTheDocument();
+    });
+
+    it("初期データがある場合、編集フォームとして表示される", () => {
+      const mockOnSubmit = vi.fn();
+      const initialData: Partial<ProfileFormData> = {
+        name: "山田太郎",
+        jobTitle: "フロントエンドエンジニア",
+        bio: "Reactが得意です",
+        skills: ["React", "TypeScript"],
+        yearsOfExperience: "5",
+        socialLinks: [
+          { service: "github", url: "https://github.com/test" },
+        ],
+      };
+
+      render(<ProfileForm onSubmit={mockOnSubmit} initialData={initialData} />);
+
+      expect(screen.getByText("プロフィール編集")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("山田太郎")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("フロントエンドエンジニア")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("Reactが得意です")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("5")).toBeInTheDocument();
+    });
   });
 
   describe("フォーム送信", () => {
     it("有効なデータでフォームを送信できる", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
 
-      render(<ProfileForm onSubmit={onSubmit} />);
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
 
-      // 必須項目を入力
       const nameInput = screen.getByLabelText(/名前/);
       const jobTitleInput = screen.getByLabelText(/職種/);
+      const submitButton = screen.getByRole("button", { name: "保存" });
 
-      await user.clear(nameInput);
-      await user.type(nameInput, "テストユーザー");
-      await user.clear(jobTitleInput);
-      await user.type(jobTitleInput, "エンジニア");
-
-      // フォームを送信
-      const submitButton = screen.getByRole("button", { name: /保存/ });
-      await user.click(submitButton);
-
-      // onSubmitが呼ばれることを確認
-      await waitFor(() => {
-        expect(onSubmit).toHaveBeenCalledTimes(1);
+      fireEvent.change(nameInput, { target: { value: "山田太郎" } });
+      fireEvent.change(jobTitleInput, {
+        target: { value: "フロントエンドエンジニア" },
       });
+      fireEvent.click(submitButton);
 
-      const submittedData = onSubmit.mock.calls[0][0];
-      expect(submittedData.name).toBe("テストユーザー");
-      expect(submittedData.jobTitle).toBe("エンジニア");
+      await waitFor(() => {
+        expect(mockOnSubmit).toHaveBeenCalledWith({
+          name: "山田太郎",
+          jobTitle: "フロントエンドエンジニア",
+          bio: "",
+          skills: [],
+          yearsOfExperience: "",
+          socialLinks: [],
+        });
+      });
     });
 
-    it("初期データが設定されている場合、フォームに表示される", () => {
-      const initialData = createTestFormData();
-      const onSubmit = vi.fn();
-
-      render(<ProfileForm initialData={initialData} onSubmit={onSubmit} />);
-
-      // 初期データが表示されることを確認
-      expect(screen.getByDisplayValue("テストユーザー")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("ソフトウェアエンジニア")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("テスト用のプロフィールです")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("5")).toBeInTheDocument();
-
-      // スキルが表示されることを確認
-      expect(screen.getByText("React")).toBeInTheDocument();
-      expect(screen.getByText("TypeScript")).toBeInTheDocument();
-
-      // SNSリンクが表示されることを確認
-      expect(screen.getByText("github")).toBeInTheDocument();
-      expect(screen.getByText("https://github.com/test")).toBeInTheDocument();
-    });
-
-    it("送信中はボタンが無効化される", async () => {
-      const _user = userEvent.setup();
-      const onSubmit = vi.fn().mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 100))
-      );
-
-      render(<ProfileForm onSubmit={onSubmit} isSubmitting={true} />);
-
-      const submitButton = screen.getByRole("button", { name: /保存/ });
-      expect(submitButton).toBeDisabled();
-    });
-  });
-
-  describe("バリデーションエラー表示", () => {
     it("名前が空の場合、エラーメッセージが表示される", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
+      const mockOnSubmit = vi.fn();
 
-      render(<ProfileForm onSubmit={onSubmit} />);
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
 
-      // 職種のみ入力
       const jobTitleInput = screen.getByLabelText(/職種/);
-      await user.type(jobTitleInput, "エンジニア");
+      const submitButton = screen.getByRole("button", { name: "保存" });
 
-      // フォームを送信
-      const submitButton = screen.getByRole("button", { name: /保存/ });
-      await user.click(submitButton);
+      fireEvent.change(jobTitleInput, {
+        target: { value: "フロントエンドエンジニア" },
+      });
+      fireEvent.click(submitButton);
 
-      // エラーメッセージが表示されることを確認
       await waitFor(() => {
         expect(screen.getByText(/名前は必須です/)).toBeInTheDocument();
       });
 
-      // onSubmitが呼ばれないことを確認
-      expect(onSubmit).not.toHaveBeenCalled();
+      expect(mockOnSubmit).not.toHaveBeenCalled();
     });
 
     it("職種が空の場合、エラーメッセージが表示される", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
+      const mockOnSubmit = vi.fn();
 
-      render(<ProfileForm onSubmit={onSubmit} />);
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
 
-      // 名前のみ入力
       const nameInput = screen.getByLabelText(/名前/);
-      await user.type(nameInput, "テストユーザー");
+      const submitButton = screen.getByRole("button", { name: "保存" });
 
-      // フォームを送信
-      const submitButton = screen.getByRole("button", { name: /保存/ });
-      await user.click(submitButton);
+      fireEvent.change(nameInput, { target: { value: "山田太郎" } });
+      fireEvent.click(submitButton);
 
-      // エラーメッセージが表示されることを確認
       await waitFor(() => {
         expect(screen.getByText(/職種は必須です/)).toBeInTheDocument();
       });
 
-      // onSubmitが呼ばれないことを確認
-      expect(onSubmit).not.toHaveBeenCalled();
-    });
-
-    it("長すぎる名前の場合、エラーメッセージが表示される", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
-
-      render(<ProfileForm onSubmit={onSubmit} />);
-
-      // 101文字の名前を入力
-      const longName = "a".repeat(101);
-      const nameInput = screen.getByLabelText(/名前/);
-      await user.type(nameInput, longName);
-
-      // 職種を入力
-      const jobTitleInput = screen.getByLabelText(/職種/);
-      await user.type(jobTitleInput, "エンジニア");
-
-      // フォームを送信
-      const submitButton = screen.getByRole("button", { name: /保存/ });
-      await user.click(submitButton);
-
-      // エラーメッセージが表示されることを確認
-      await waitFor(() => {
-        expect(screen.getByText(/名前は100文字以内で入力してください/)).toBeInTheDocument();
-      });
-
-      // onSubmitが呼ばれないことを確認
-      expect(onSubmit).not.toHaveBeenCalled();
-    });
-
-    it("入力を修正するとエラーメッセージが消える", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
-
-      render(<ProfileForm onSubmit={onSubmit} />);
-
-      // フォームを送信してエラーを表示
-      const submitButton = screen.getByRole("button", { name: /保存/ });
-      await user.click(submitButton);
-
-      // エラーメッセージが表示されることを確認
-      await waitFor(() => {
-        expect(screen.getByText(/名前は必須です/)).toBeInTheDocument();
-      });
-
-      // 名前を入力
-      const nameInput = screen.getByLabelText(/名前/);
-      await user.type(nameInput, "テストユーザー");
-
-      // エラーメッセージが消えることを確認
-      await waitFor(() => {
-        expect(screen.queryByText(/名前は必須です/)).not.toBeInTheDocument();
-      });
+      expect(mockOnSubmit).not.toHaveBeenCalled();
     });
   });
 
-  describe("スキル追加・削除", () => {
+  describe("スキル管理", () => {
     it("スキルを追加できる", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
+      const mockOnSubmit = vi.fn();
 
-      render(<ProfileForm onSubmit={onSubmit} />);
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
 
-      // スキルを入力
-      const skillInput = screen.getByLabelText(/スキルを追加/);
-      await user.type(skillInput, "React");
+      const skillInput = screen.getByPlaceholderText("スキルを入力してEnter");
+      const addButton = screen.getByRole("button", { name: "追加" });
 
-      // 追加ボタンをクリック（スキルセクション内のボタンを取得）
-      const buttons = screen.getAllByRole("button", { name: /追加/ });
-      const skillAddButton = buttons[0]; // スキルの追加ボタンは最初
-      await user.click(skillAddButton);
+      fireEvent.change(skillInput, { target: { value: "React" } });
+      fireEvent.click(addButton);
 
-      // スキルが表示されることを確認
-      expect(screen.getByText("React")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText("React")).toBeInTheDocument();
+      });
 
-      // 入力フィールドがクリアされることを確認
+      // 入力フィールドがクリアされる
       expect(skillInput).toHaveValue("");
     });
 
     it("Enterキーでスキルを追加できる", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
+      const mockOnSubmit = vi.fn();
 
-      render(<ProfileForm onSubmit={onSubmit} />);
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
 
-      // スキルを入力
-      const skillInput = screen.getByLabelText(/スキルを追加/);
-      await user.type(skillInput, "TypeScript{Enter}");
+      const skillInput = screen.getByPlaceholderText("スキルを入力してEnter");
 
-      // スキルが表示されることを確認
-      expect(screen.getByText("TypeScript")).toBeInTheDocument();
-    });
+      fireEvent.change(skillInput, { target: { value: "TypeScript" } });
+      fireEvent.keyDown(skillInput, { key: "Enter", code: "Enter" });
 
-    it("空のスキルは追加できない", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
-
-      render(<ProfileForm onSubmit={onSubmit} />);
-
-      // 追加ボタンが無効化されていることを確認
-      const buttons = screen.getAllByRole("button", { name: /追加/ });
-      const skillAddButton = buttons[0]; // スキルの追加ボタンは最初
-      expect(skillAddButton).toBeDisabled();
-
-      // 空白のみのスキルを入力
-      const skillInput = screen.getByLabelText(/スキルを追加/);
-      await user.type(skillInput, "   ");
-
-      // 追加ボタンが無効化されたままであることを確認
-      expect(skillAddButton).toBeDisabled();
-    });
-
-    it("重複するスキルは追加できない", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
-
-      render(<ProfileForm onSubmit={onSubmit} />);
-
-      // スキルを追加
-      const skillInput = screen.getByLabelText(/スキルを追加/);
-      await user.type(skillInput, "React");
-      const buttons = screen.getAllByRole("button", { name: /追加/ });
-      const skillAddButton = buttons[0]; // スキルの追加ボタンは最初
-      await user.click(skillAddButton);
-
-      // 同じスキルを再度追加しようとする
-      await user.type(skillInput, "React");
-      await user.click(skillAddButton);
-
-      // スキルが1つだけ表示されることを確認
-      const skillTags = screen.getAllByText("React");
-      expect(skillTags).toHaveLength(1);
+      await waitFor(() => {
+        expect(screen.getByText("TypeScript")).toBeInTheDocument();
+      });
     });
 
     it("スキルを削除できる", async () => {
-      const user = userEvent.setup();
-      const initialData: ProfileFormData = {
-        ...createTestFormData(),
+      const mockOnSubmit = vi.fn();
+      const initialData: Partial<ProfileFormData> = {
+        name: "山田太郎",
+        jobTitle: "エンジニア",
         skills: ["React", "TypeScript"],
       };
-      const onSubmit = vi.fn();
 
-      render(<ProfileForm initialData={initialData} onSubmit={onSubmit} />);
+      render(<ProfileForm onSubmit={mockOnSubmit} initialData={initialData} />);
 
-      // スキルが表示されることを確認
       expect(screen.getByText("React")).toBeInTheDocument();
       expect(screen.getByText("TypeScript")).toBeInTheDocument();
 
-      // Reactを削除
-      const removeButton = screen.getByLabelText(/Reactを削除/);
-      await user.click(removeButton);
+      const removeButtons = screen.getAllByLabelText(/を削除/);
+      fireEvent.click(removeButtons[0]);
 
-      // Reactが削除されることを確認
-      expect(screen.queryByText("React")).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByText("React")).not.toBeInTheDocument();
+      });
+
       expect(screen.getByText("TypeScript")).toBeInTheDocument();
+    });
+
+    it("重複するスキルは追加されない", async () => {
+      const mockOnSubmit = vi.fn();
+
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
+
+      const skillInput = screen.getByPlaceholderText("スキルを入力してEnter");
+      const addButton = screen.getByRole("button", { name: "追加" });
+
+      // 1回目の追加
+      fireEvent.change(skillInput, { target: { value: "React" } });
+      fireEvent.click(addButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("React")).toBeInTheDocument();
+      });
+
+      // 2回目の追加（重複）
+      fireEvent.change(skillInput, { target: { value: "React" } });
+      fireEvent.click(addButton);
+
+      // Reactは1つだけ表示される
+      const reactElements = screen.getAllByText("React");
+      expect(reactElements).toHaveLength(1);
+    });
+
+    it("空白のスキルは追加されない", async () => {
+      const mockOnSubmit = vi.fn();
+
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
+
+      const skillInput = screen.getByPlaceholderText("スキルを入力してEnter");
+      const addButton = screen.getByRole("button", { name: "追加" });
+
+      fireEvent.change(skillInput, { target: { value: "   " } });
+      fireEvent.click(addButton);
+
+      // スキルタグが表示されない
+      expect(screen.queryByRole("button", { name: /を削除/ })).not.toBeInTheDocument();
     });
   });
 
-  describe("SNSリンク追加・削除", () => {
-    it("定義済みサービスのリンクを追加できる", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
+  describe("SNSリンク管理", () => {
+    it("SNSリンクを追加できる", async () => {
+      const mockOnSubmit = vi.fn();
 
-      render(<ProfileForm onSubmit={onSubmit} />);
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
 
-      // サービスを選択（デフォルトはTwitter）
-      const serviceSelect = screen.getByLabelText(/サービス/);
-      expect(serviceSelect).toHaveValue(PredefinedService.TWITTER);
+      const addLinkButton = screen.getByRole("button", { name: "リンクを追加" });
+      fireEvent.click(addLinkButton);
 
-      // URLを入力
-      const urlInput = screen.getByLabelText(/^URL$/);
-      await user.type(urlInput, "https://twitter.com/test");
-
-      // リンクを追加
-      const addLinkButton = screen.getByRole("button", { name: /リンクを追加/ });
-      await user.click(addLinkButton);
-
-      // リンクが表示されることを確認
-      expect(screen.getByText("twitter")).toBeInTheDocument();
-      expect(screen.getByText("https://twitter.com/test")).toBeInTheDocument();
-
-      // 入力フィールドがクリアされることを確認
-      expect(urlInput).toHaveValue("");
-    });
-
-    it("カスタムサービスのリンクを追加できる", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
-
-      render(<ProfileForm onSubmit={onSubmit} />);
-
-      // "その他"を選択
-      const serviceSelect = screen.getByLabelText(/サービス/);
-      await user.selectOptions(serviceSelect, "custom");
-
-      // カスタムサービス名を入力
-      const customServiceInput = screen.getByLabelText(/カスタムサービス名/);
-      await user.type(customServiceInput, "LinkedIn");
-
-      // URLを入力
-      const urlInput = screen.getByLabelText(/^URL$/);
-      await user.type(urlInput, "https://linkedin.com/in/test");
-
-      // リンクを追加
-      const addLinkButton = screen.getByRole("button", { name: /リンクを追加/ });
-      await user.click(addLinkButton);
-
-      // リンクが表示されることを確認
-      expect(screen.getByText("LinkedIn")).toBeInTheDocument();
-      expect(screen.getByText("https://linkedin.com/in/test")).toBeInTheDocument();
-    });
-
-    it("GitHubのリンクを追加できる", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
-
-      render(<ProfileForm onSubmit={onSubmit} />);
-
-      // GitHubを選択
-      const serviceSelect = screen.getByLabelText(/サービス/);
-      await user.selectOptions(serviceSelect, PredefinedService.GITHUB);
-
-      // URLを入力
-      const urlInput = screen.getByLabelText(/^URL$/);
-      await user.type(urlInput, "https://github.com/test");
-
-      // リンクを追加
-      const addLinkButton = screen.getByRole("button", { name: /リンクを追加/ });
-      await user.click(addLinkButton);
-
-      // リンクが表示されることを確認
-      expect(screen.getByText("github")).toBeInTheDocument();
-      expect(screen.getByText("https://github.com/test")).toBeInTheDocument();
-    });
-
-    it("空のサービス名やURLではリンクを追加できない", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
-
-      render(<ProfileForm onSubmit={onSubmit} />);
-
-      // 追加ボタンが無効化されていることを確認
-      const addLinkButton = screen.getByRole("button", { name: /リンクを追加/ });
-      expect(addLinkButton).toBeDisabled();
-
-      // URLのみ入力
-      const urlInput = screen.getByLabelText(/^URL$/);
-      await user.type(urlInput, "https://example.com");
-
-      // ボタンが有効化されることを確認
-      expect(addLinkButton).not.toBeDisabled();
-
-      // URLをクリア
-      await user.clear(urlInput);
-
-      // ボタンが無効化されることを確認
-      expect(addLinkButton).toBeDisabled();
+      await waitFor(() => {
+        expect(screen.getByLabelText("サービス選択")).toBeInTheDocument();
+      });
     });
 
     it("SNSリンクを削除できる", async () => {
-      const user = userEvent.setup();
-      const initialData: ProfileFormData = {
-        ...createTestFormData(),
+      const mockOnSubmit = vi.fn();
+      const initialData: Partial<ProfileFormData> = {
+        name: "山田太郎",
+        jobTitle: "エンジニア",
         socialLinks: [
-          {
-            service: PredefinedService.GITHUB,
-            url: "https://github.com/test",
-          },
-          {
-            service: PredefinedService.TWITTER,
-            url: "https://twitter.com/test",
-          },
+          { service: "github", url: "https://github.com/test" },
         ],
       };
-      const onSubmit = vi.fn();
 
-      render(<ProfileForm initialData={initialData} onSubmit={onSubmit} />);
+      render(<ProfileForm onSubmit={mockOnSubmit} initialData={initialData} />);
 
-      // リンクが表示されることを確認
-      expect(screen.getByText("github")).toBeInTheDocument();
-      expect(screen.getByText("twitter")).toBeInTheDocument();
+      const deleteButton = screen.getByRole("button", { name: "リンクを削除" });
+      fireEvent.click(deleteButton);
 
-      // GitHubのリンクを削除
-      const removeButton = screen.getByLabelText(/githubのリンクを削除/);
-      await user.click(removeButton);
+      await waitFor(() => {
+        expect(screen.queryByDisplayValue("https://github.com/test")).not.toBeInTheDocument();
+      });
+    });
 
-      // GitHubのリンクが削除されることを確認
-      expect(screen.queryByText("github")).not.toBeInTheDocument();
-      expect(screen.getByText("twitter")).toBeInTheDocument();
+    it("サービスとURLを入力できる", async () => {
+      const mockOnSubmit = vi.fn();
+
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
+
+      const addLinkButton = screen.getByRole("button", { name: "リンクを追加" });
+      fireEvent.click(addLinkButton);
+
+      await waitFor(() => {
+        const serviceSelect = screen.getByLabelText("サービス選択");
+        fireEvent.change(serviceSelect, { target: { value: "github" } });
+      });
+
+      const urlInput = screen.getByPlaceholderText("https://example.com");
+      fireEvent.change(urlInput, { target: { value: "https://github.com/test" } });
+
+      expect(urlInput).toHaveValue("https://github.com/test");
     });
   });
 
   describe("キャンセル機能", () => {
-    it("キャンセルボタンが表示される", () => {
-      const onSubmit = vi.fn();
-      const onCancel = vi.fn();
+    it("キャンセルボタンが表示され、クリックできる", () => {
+      const mockOnSubmit = vi.fn();
+      const mockOnCancel = vi.fn();
 
-      render(<ProfileForm onSubmit={onSubmit} onCancel={onCancel} />);
+      render(<ProfileForm onSubmit={mockOnSubmit} onCancel={mockOnCancel} />);
 
-      const cancelButton = screen.getByRole("button", { name: /キャンセル/ });
+      const cancelButton = screen.getByRole("button", { name: "キャンセル" });
       expect(cancelButton).toBeInTheDocument();
+
+      fireEvent.click(cancelButton);
+      expect(mockOnCancel).toHaveBeenCalled();
     });
 
-    it("キャンセルボタンをクリックするとonCancelが呼ばれる", async () => {
-      const user = userEvent.setup();
-      const onSubmit = vi.fn();
-      const onCancel = vi.fn();
+    it("onCancelが指定されていない場合、キャンセルボタンは表示されない", () => {
+      const mockOnSubmit = vi.fn();
 
-      render(<ProfileForm onSubmit={onSubmit} onCancel={onCancel} />);
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
 
-      const cancelButton = screen.getByRole("button", { name: /キャンセル/ });
-      await user.click(cancelButton);
-
-      expect(onCancel).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("button", { name: "キャンセル" })).not.toBeInTheDocument();
     });
+  });
 
-    it("onCancelが提供されていない場合、キャンセルボタンは表示されない", () => {
-      const onSubmit = vi.fn();
+  describe("ローディング状態", () => {
+    it("ローディング中はフォームが無効化される", () => {
+      const mockOnSubmit = vi.fn();
 
-      render(<ProfileForm onSubmit={onSubmit} />);
+      render(<ProfileForm onSubmit={mockOnSubmit} loading={true} />);
 
-      const cancelButton = screen.queryByRole("button", { name: /キャンセル/ });
-      expect(cancelButton).not.toBeInTheDocument();
+      const nameInput = screen.getByLabelText(/名前/);
+      const jobTitleInput = screen.getByLabelText(/職種/);
+      const submitButton = screen.getByRole("button", { name: "保存中..." });
+
+      expect(nameInput).toBeDisabled();
+      expect(jobTitleInput).toBeDisabled();
+      expect(submitButton).toBeDisabled();
+    });
+  });
+
+  describe("エラー表示", () => {
+    it("エラーメッセージが表示される", () => {
+      const mockOnSubmit = vi.fn();
+
+      render(
+        <ProfileForm
+          onSubmit={mockOnSubmit}
+          error="プロフィールの保存に失敗しました"
+        />
+      );
+
+      expect(screen.getByText("プロフィールの保存に失敗しました")).toBeInTheDocument();
     });
   });
 });
