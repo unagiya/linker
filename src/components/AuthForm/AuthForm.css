@@ -1,0 +1,80 @@
+/**
+ * AuthFormコンポーネントのスタイル
+ */
+
+.auth-form-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+  background-color: #f5f5f5;
+}
+
+.auth-form-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.auth-form-title {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  text-align: center;
+  color: #333;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.auth-form-mode-change {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+  text-align: center;
+}
+
+.auth-form-mode-change-text {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.auth-form-mode-change-button {
+  padding: 0;
+  background: none;
+  border: none;
+  color: #007bff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.auth-form-mode-change-button:hover:not(:disabled) {
+  color: #0056b3;
+}
+
+.auth-form-mode-change-button:disabled {
+  color: #999;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 480px) {
+  .auth-form-card {
+    padding: 1.5rem;
+  }
+
+  .auth-form-title {
+    font-size: 1.5rem;
+  }
+}
