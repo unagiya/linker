@@ -1,0 +1,5 @@
+/**
+ * NotFoundのエクスポート
+ */
+
+export * from "./NotFound";

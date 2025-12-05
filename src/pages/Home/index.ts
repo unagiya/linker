@@ -1,0 +1,5 @@
+/**
+ * Homeのエクスポート
+ */
+
+export * from "./Home";
