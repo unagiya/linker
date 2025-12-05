@@ -2,5 +2,5 @@
  * Repositoryのエクスポート
  */
 
-export * from "./ProfileRepository";
-export * from "./LocalStorageRepository";
+export { ProfileRepository } from "./ProfileRepository";
+export { SupabaseProfileRepository } from "./SupabaseProfileRepository";

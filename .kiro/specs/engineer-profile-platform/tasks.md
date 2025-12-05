@@ -90,20 +90,20 @@
   - **プロパティ9: セッションの永続性**
   - **検証: 要件 2.6**
 
-- [ ] 6. Repository層の実装
+- [x] 6. Repository層の実装
   - ProfileRepositoryインターフェースの定義
   - SupabaseProfileRepositoryの実装（save, findById, findByUserId, findAll, delete, exists）
   - データマッピング関数の実装（Supabase ↔ アプリケーション型）
   - エラーハンドリングの実装
   - _要件: 7.1, 7.2_
 
-- [ ] 6.1 SupabaseProfileRepositoryのユニットテストを作成
+- [x] 6.1 SupabaseProfileRepositoryのユニットテストを作成
   - モックSupabaseクライアントを使用したテスト
   - 各メソッドのテスト
   - エラーケースのテスト
   - _要件: 7.1, 7.2_
 
-- [ ] 6.2 プロパティ27のプロパティベーステストを実装
+- [x] 6.2 プロパティ27のプロパティベーステストを実装
   - **プロパティ27: データベースラウンドトリップ**
   - **検証: 要件 7.1, 7.2**
 
