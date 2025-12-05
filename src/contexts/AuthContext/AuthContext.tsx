@@ -92,7 +92,7 @@ const initialState: AuthState = {
 /**
  * 認証コンテキスト
  */
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 /**
  * 認証プロバイダーのプロパティ
