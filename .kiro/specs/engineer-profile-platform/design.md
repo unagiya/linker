@@ -2,13 +2,15 @@
 
 ## 概要
 
-Linkerは、エンジニアが自己紹介プロフィールを作成・共有するためのReactベースのシングルページアプリケーション（SPA）です。名刺のように個人に渡せるプロフィールURLを生成し、ブラウザのローカルストレージを使用してデータを永続化します。
+Linkerは、エンジニアが自己紹介プロフィールを作成・共有するためのReactベースのシングルページアプリケーション（SPA）です。名刺のように個人に渡せるプロフィールURLを生成し、Supabaseを使用して認証とデータ管理を行います。
 
 ### 主要機能
+- アカウント登録・ログイン・ログアウト
 - プロフィールの作成・編集・削除
 - プロフィール情報の表示（名刺風レイアウト）
 - 共有可能なURL生成
-- ローカルストレージによるデータ永続化
+- Supabaseによるデータ永続化と認証
+- Row Level Security (RLS)による所有者制御
 - レスポンシブUI
 
 ## アーキテクチャ
@@ -17,6 +19,11 @@ Linkerは、エンジニアが自己紹介プロフィールを作成・共有�
 - **フロントエンド**: React 18+ with TypeScript
 - **ルーティング**: React Router v6
 - **状態管理**: React Context API + useReducer
+- **バックエンド**: Supabase
+  - **認証**: Supabase Auth（メールアドレス + パスワード）
+  - **データベース**: PostgreSQL（Supabase提供）
+  - **アクセス制御**: Row Level Security (RLS)
+- **Supabaseクライアント**: @supabase/supabase-js
 - **スタイリング**: CSS Modules または Tailwind CSS
 - **バリデーション**: Zod
 - **ビルドツール**: Vite
@@ -31,20 +38,31 @@ src/
 │   ├── ProfileForm/    # プロフィール入力フォーム
 │   ├── ProfileCard/    # プロフィール表示カード
 │   ├── Navigation/     # ナビゲーションバー
+│   ├── AuthForm/       # 認証フォーム（登録・ログイン）
 │   └── common/         # 共通コンポーネント
 ├── contexts/           # React Context
+│   ├── AuthContext/    # 認証状態管理
 │   └── ProfileContext/ # プロフィール状態管理
 ├── hooks/              # カスタムフック
+│   ├── useAuth/        # 認証操作
 │   └── useProfile/     # プロフィール操作
+├── lib/                # 外部ライブラリの設定
+│   └── supabase.ts     # Supabaseクライアント初期化
 ├── repositories/       # データアクセス層（Repository パターン）
-│   ├── ProfileRepository.ts      # Repository インターフェース
-│   ├── LocalStorageRepository.ts # ローカルストレージ実装
-│   └── index.ts                  # Repository のエクスポート
+│   ├── ProfileRepository.ts         # Repository インターフェース
+│   ├── SupabaseProfileRepository.ts # Supabase実装
+│   └── index.ts                     # Repository のエクスポート
+├── services/           # ビジネスロジック層
+│   └── authService.ts  # 認証サービス
 ├── types/              # TypeScript型定義
-│   └── profile.ts      # プロフィール型
+│   ├── auth.ts         # 認証関連の型
+│   ├── profile.ts      # プロフィール型
+│   └── database.ts     # Supabaseデータベース型
 ├── utils/              # ユーティリティ関数
 │   └── validation.ts   # バリデーション
 ├── pages/              # ページコンポーネント
+│   ├── SignUp/         # アカウント登録ページ
+│   ├── SignIn/         # ログインページ
 │   ├── CreateProfile/  # プロフィール作成ページ
 │   ├── EditProfile/    # プロフィール編集ページ
 │   └── ViewProfile/    # プロフィール表示ページ
@@ -54,6 +72,15 @@ src/
 ## コンポーネントとインターフェース
 
 ### データモデル
+
+#### User型（Supabase Auth）
+```typescript
+interface User {
+  id: string;                    // SupabaseのユーザーID（UUID）
+  email: string;                 // メールアドレス
+  created_at: string;            // アカウント作成日時
+}
+```
 
 #### SocialServiceType型
 ```typescript
@@ -79,6 +106,7 @@ interface SocialLink {
 ```typescript
 interface Profile {
   id: string;                    // 一意のID（UUID）
+  user_id: string;               // 所有者のユーザーID（Supabase Auth）
   name: string;                  // 名前（必須）
   jobTitle: string;              // 職種（必須）
   bio?: string;                  // 自己紹介文
@@ -105,7 +133,89 @@ interface ProfileFormData {
 }
 ```
 
+#### Supabaseデータベーススキーマ
+
+**profilesテーブル:**
+```sql
+CREATE TABLE profiles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  job_title TEXT NOT NULL,
+  bio TEXT,
+  skills TEXT[] DEFAULT '{}',
+  years_of_experience INTEGER,
+  social_links JSONB DEFAULT '[]',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id)  -- 1ユーザー1プロフィール
+);
+
+-- Row Level Security (RLS) ポリシー
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- 誰でもプロフィールを閲覧可能
+CREATE POLICY "プロフィールは誰でも閲覧可能"
+  ON profiles FOR SELECT
+  USING (true);
+
+-- ログイン済みユーザーは自分のプロフィールを作成可能
+CREATE POLICY "ユーザーは自分のプロフィールを作成可能"
+  ON profiles FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- ユーザーは自分のプロフィールのみ更新可能
+CREATE POLICY "ユーザーは自分のプロフィールのみ更新可能"
+  ON profiles FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- ユーザーは自分のプロフィールのみ削除可能
+CREATE POLICY "ユーザーは自分のプロフィールのみ削除可能"
+  ON profiles FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- updated_atを自動更新するトリガー
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_profiles_updated_at
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+```
+
 ### 主要コンポーネント
+
+#### AuthContext
+認証状態の管理を担当するContext。Supabase Authを使用して認証を行う。
+
+**状態:**
+- `user: User | null` - 現在のログインユーザー
+- `session: Session | null` - 現在のセッション
+- `loading: boolean` - ローディング状態
+- `error: string | null` - エラーメッセージ
+
+**アクション:**
+- `signUp(email: string, password: string): Promise<void>` - アカウント登録
+- `signIn(email: string, password: string): Promise<void>` - ログイン
+- `signOut(): Promise<void>` - ログアウト
+- `clearError(): void` - エラークリア
+
+**使用例:**
+```typescript
+const { user, signIn, signOut } = useAuth();
+
+// ログイン
+await signIn('user@example.com', 'password');
+
+// ログアウト
+await signOut();
+```
 
 #### ProfileContext
 プロフィールの状態管理を担当するContext。ProfileRepositoryを使用してデータアクセスを行う。
@@ -119,17 +229,49 @@ interface ProfileFormData {
 - `error: string | null` - エラーメッセージ
 
 **アクション:**
-- `createProfile(data: ProfileFormData): Promise<Profile>`
-- `updateProfile(id: string, data: ProfileFormData): Promise<Profile>`
-- `deleteProfile(id: string): Promise<void>`
-- `loadProfile(id: string): Promise<Profile | null>`
+- `createProfile(data: ProfileFormData): Promise<Profile>` - プロフィール作成
+- `updateProfile(id: string, data: ProfileFormData): Promise<Profile>` - プロフィール更新
+- `deleteProfile(id: string): Promise<void>` - プロフィール削除
+- `loadProfile(id: string): Promise<Profile | null>` - プロフィール読み込み
+- `loadMyProfile(): Promise<Profile | null>` - 自分のプロフィール読み込み
+- `clearError(): void` - エラークリア
 
 **Repository の注入:**
 ```typescript
-<ProfileProvider repository={localStorageRepository}>
+<ProfileProvider repository={supabaseRepository}>
   <App />
 </ProfileProvider>
 ```
+
+**使用例:**
+```typescript
+const { profile, createProfile, loadMyProfile } = useProfile();
+
+// 自分のプロフィールを読み込み
+await loadMyProfile();
+
+// プロフィール作成
+await createProfile({
+  name: '山田太郎',
+  jobTitle: 'フロントエンドエンジニア',
+  // ...
+});
+```
+
+#### AuthForm
+アカウント登録・ログインフォームコンポーネント。
+
+**Props:**
+- `mode: 'signup' | 'signin'` - モード（登録またはログイン）
+- `onSubmit: (email: string, password: string) => Promise<void>` - 送信ハンドラ
+- `onModeChange?: () => void` - モード切り替えハンドラ
+
+**機能:**
+- メールアドレスとパスワードの入力
+- リアルタイムバリデーション
+- エラーメッセージ表示
+- ローディング状態の表示
+- 登録/ログインモードの切り替え
 
 #### ProfileForm
 プロフィールの作成・編集フォームコンポーネント。
@@ -161,7 +303,30 @@ interface ProfileFormData {
 - 外部リンクの表示
 - 所有者のみ編集・削除ボタン表示
 
-#### ProfileRepository（インターフェース）
+#### ProtectedRoute
+認証が必要なページを保護するコンポーネント。
+
+**Props:**
+- `children: ReactNode` - 保護するコンポーネント
+
+**機能:**
+- ログインしていない場合、ログインページにリダイレクト
+- ログイン済みの場合、子コンポーネントを表示
+
+**使用例:**
+```typescript
+<Route path="/create" element={
+  <ProtectedRoute>
+    <CreateProfile />
+  </ProtectedRoute>
+} />
+```
+
+## Repository パターンによる抽象化
+
+データアクセス層をRepository パターンで抽象化することで、保存先の変更が容易になります。
+
+### ProfileRepository（インターフェース）
 プロフィールデータの永続化を抽象化するRepository。
 
 **インターフェース:**
@@ -169,6 +334,7 @@ interface ProfileFormData {
 interface ProfileRepository {
   save(profile: Profile): Promise<void>;
   findById(id: string): Promise<Profile | null>;
+  findByUserId(userId: string): Promise<Profile | null>;
   findAll(): Promise<Profile[]>;
   delete(id: string): Promise<void>;
   exists(id: string): Promise<boolean>;
@@ -176,123 +342,235 @@ interface ProfileRepository {
 ```
 
 **実装:**
-- `LocalStorageRepository`: ブラウザのローカルストレージを使用
-- 将来的に追加可能: `ApiRepository`, `IndexedDBRepository` など
+- `SupabaseProfileRepository`: Supabaseデータベースを使用
+- 将来的に追加可能: `LocalStorageRepository`, `ApiRepository` など
 
 **利点:**
 - ストレージの実装を簡単に切り替え可能
 - テスト時にモックRepositoryを使用可能
 - ビジネスロジックとデータアクセスの分離
 
-## データモデル
-
-### Repository パターンによる抽象化
-
-データアクセス層をRepository パターンで抽象化することで、保存先の変更が容易になります。
-
-#### LocalStorageRepository 実装
-
-**ストレージキー:** `linker_profiles`
-
-**値の構造:**
-```typescript
-{
-  [profileId: string]: Profile
-}
-```
-
-複数のプロフィールをサポートするため、IDをキーとしたオブジェクトで管理します。
+### SupabaseProfileRepository 実装
 
 **実装例:**
 ```typescript
-class LocalStorageRepository implements ProfileRepository {
-  private readonly STORAGE_KEY = 'linker_profiles';
+import { supabase } from '../lib/supabase';
 
+export class SupabaseProfileRepository implements ProfileRepository {
   async save(profile: Profile): Promise<void> {
-    const profiles = await this.findAll();
-    const profileMap = profiles.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
-    profileMap[profile.id] = profile;
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(profileMap));
+    // 既存のプロフィールがあるか確認
+    const existing = await this.findById(profile.id);
+    
+    if (existing) {
+      // 更新
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: profile.name,
+          job_title: profile.jobTitle,
+          bio: profile.bio,
+          skills: profile.skills,
+          years_of_experience: profile.yearsOfExperience,
+          social_links: profile.socialLinks,
+          updated_at: profile.updatedAt,
+        })
+        .eq('id', profile.id);
+      
+      if (error) throw error;
+    } else {
+      // 新規作成
+      const { error } = await supabase
+        .from('profiles')
+        .insert({
+          id: profile.id,
+          user_id: profile.user_id,
+          name: profile.name,
+          job_title: profile.jobTitle,
+          bio: profile.bio,
+          skills: profile.skills,
+          years_of_experience: profile.yearsOfExperience,
+          social_links: profile.socialLinks,
+          created_at: profile.createdAt,
+          updated_at: profile.updatedAt,
+        });
+      
+      if (error) throw error;
+    }
   }
 
   async findById(id: string): Promise<Profile | null> {
-    const data = localStorage.getItem(this.STORAGE_KEY);
-    if (!data) return null;
-    const profiles = JSON.parse(data);
-    return profiles[id] || null;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') return null; // Not found
+      throw error;
+    }
+    
+    return this.mapToProfile(data);
+  }
+
+  async findByUserId(userId: string): Promise<Profile | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') return null; // Not found
+      throw error;
+    }
+    
+    return this.mapToProfile(data);
   }
 
   async findAll(): Promise<Profile[]> {
-    const data = localStorage.getItem(this.STORAGE_KEY);
-    if (!data) return [];
-    const profiles = JSON.parse(data);
-    return Object.values(profiles);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return data.map(this.mapToProfile);
   }
 
   async delete(id: string): Promise<void> {
-    const data = localStorage.getItem(this.STORAGE_KEY);
-    if (!data) return;
-    const profiles = JSON.parse(data);
-    delete profiles[id];
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(profiles));
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
   }
 
   async exists(id: string): Promise<boolean> {
     const profile = await this.findById(id);
     return profile !== null;
   }
+
+  private mapToProfile(data: any): Profile {
+    return {
+      id: data.id,
+      user_id: data.user_id,
+      name: data.name,
+      jobTitle: data.job_title,
+      bio: data.bio,
+      skills: data.skills || [],
+      yearsOfExperience: data.years_of_experience,
+      socialLinks: data.social_links || [],
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+  }
 }
 ```
 
-#### 将来の拡張性
+### AuthService
+Supabase Authを使用した認証サービス。Repositoryパターンとは別に、認証専用のサービスとして実装。
 
-**API Repository 実装例:**
+**関数:**
 ```typescript
-class ApiRepository implements ProfileRepository {
-  constructor(private baseUrl: string) {}
+// アカウント登録
+async function signUp(email: string, password: string): Promise<User>
 
-  async save(profile: Profile): Promise<void> {
-    await fetch(`${this.baseUrl}/profiles/${profile.id}`, {
-      method: 'PUT',
-      body: JSON.stringify(profile)
-    });
-  }
+// ログイン
+async function signIn(email: string, password: string): Promise<User>
 
-  async findById(id: string): Promise<Profile | null> {
-    const response = await fetch(`${this.baseUrl}/profiles/${id}`);
-    if (!response.ok) return null;
-    return response.json();
-  }
+// ログアウト
+async function signOut(): Promise<void>
 
-  // ... 他のメソッド
+// 現在のセッションを取得
+async function getSession(): Promise<Session | null>
+
+// 現在のユーザーを取得
+async function getCurrentUser(): Promise<User | null>
+```
+
+**実装例:**
+```typescript
+import { supabase } from '../lib/supabase';
+
+export async function signUp(email: string, password: string): Promise<User> {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+  
+  if (error) throw error;
+  if (!data.user) throw new Error('ユーザーの作成に失敗しました');
+  
+  return data.user;
+}
+
+export async function signIn(email: string, password: string): Promise<User> {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  
+  if (error) throw error;
+  if (!data.user) throw new Error('ログインに失敗しました');
+  
+  return data.user;
+}
+
+export async function signOut(): Promise<void> {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
 }
 ```
 
-**切り替え方法:**
+### Repository の注入
+
+ProfileContextにRepositoryを注入することで、テスト時や将来の変更に柔軟に対応できます。
+
 ```typescript
-// ローカルストレージを使用
-const repository = new LocalStorageRepository();
+// 本番環境
+const supabaseRepository = new SupabaseProfileRepository();
 
-// APIを使用（将来）
-// const repository = new ApiRepository('https://api.example.com');
-
-<ProfileProvider repository={repository}>
+<ProfileProvider repository={supabaseRepository}>
   <App />
+</ProfileProvider>
+
+// テスト環境
+const mockRepository = new MockProfileRepository();
+
+<ProfileProvider repository={mockRepository}>
+  <TestComponent />
 </ProfileProvider>
 ```
 
 ### URL構造
 
-- `/` - ホームページ（プロフィール作成へのリンク）
-- `/create` - プロフィール作成ページ
-- `/profile/:id` - プロフィール表示ページ
-- `/profile/:id/edit` - プロフィール編集ページ
+- `/` - ホームページ（ログイン済みの場合はプロフィール作成へのリンク）
+- `/signup` - アカウント登録ページ
+- `/signin` - ログインページ
+- `/create` - プロフィール作成ページ（要認証）
+- `/profile/:id` - プロフィール表示ページ（公開）
+- `/profile/:id/edit` - プロフィール編集ページ（要認証・所有者のみ）
 
 ### バリデーションルール
 
 Zodスキーマを使用してバリデーションを実装：
 
 ```typescript
+// 認証用スキーマ
+const signUpSchema = z.object({
+  email: z.string().email("有効なメールアドレスを入力してください"),
+  password: z.string().min(6, "パスワードは6文字以上で入力してください")
+});
+
+const signInSchema = z.object({
+  email: z.string().email("有効なメールアドレスを入力してください"),
+  password: z.string().min(1, "パスワードを入力してください")
+});
+
+// プロフィール用スキーマ
 const socialLinkSchema = z.object({
   service: z.string().min(1, "サービス名は必須です").max(50, "サービス名は50文字以内で入力してください"),
   url: z.string().url("有効なURLを入力してください")
@@ -318,93 +596,153 @@ const profileSchema = z.object({
 
 *プロパティとは、システムのすべての有効な実行において真であるべき特性や動作のことです。本質的には、システムが何をすべきかについての形式的な記述です。プロパティは、人間が読める仕様と機械で検証可能な正確性保証との橋渡しをします。*
 
-### プロパティ 1: 有効なプロフィール作成の永続化
-*任意の*有効なプロフィールデータ（名前と職種が非空）に対して、プロフィールを作成すると、ローカルストレージに保存され、同じIDで読み込むと同等のデータが取得できる
+### プロパティ 1: 有効な認証情報でのアカウント作成
+*任意の*有効なメールアドレスとパスワード（6文字以上）に対して、アカウント登録を行うと、Supabase Authに新しいアカウントが作成される
 **検証: 要件 1.2**
 
-### プロパティ 2: 無効な必須項目の拒否
-*任意の*プロフィールデータで、名前または職種が空文字列・null・undefinedの場合、プロフィール作成は失敗し、エラーメッセージが表示される
+### プロパティ 2: 無効なメールアドレスの拒否
+*任意の*無効なメールアドレス形式に対して、アカウント登録は失敗し、エラーメッセージが表示される
 **検証: 要件 1.3**
 
-### プロパティ 3: プロフィール作成後のリダイレクト
-*任意の*有効なプロフィールデータに対して、プロフィールが正常に作成されると、作成されたプロフィールのIDを含むURLにリダイレクトされる
+### プロパティ 3: 短いパスワードの拒否
+*任意の*6文字未満のパスワードに対して、アカウント登録は失敗し、エラーメッセージが表示される
 **検証: 要件 1.4**
 
-### プロパティ 4: URLバリデーション
-*任意の*URL文字列に対して、有効なURL形式（http/https）の場合のみ受け入れられ、無効な形式の場合はバリデーションエラーが発生する
+### プロパティ 4: アカウント作成後の自動ログインとリダイレクト
+*任意の*有効なアカウント作成に対して、ユーザーは自動的にログインされ、プロフィール作成ページにリダイレクトされる
+**検証: 要件 1.5**
+
+### プロパティ 5: 正しい認証情報でのログイン
+*任意の*正しいメールアドレスとパスワードに対して、ログインが成功し、セッションが確立される
 **検証: 要件 2.2**
 
-### プロパティ 5: スキル配列の管理
-*任意の*スキル文字列の配列（最大20個）に対して、すべてのスキルが保存され、読み込み時に同じ順序で取得できる
+### プロパティ 6: 間違った認証情報の拒否
+*任意の*間違ったメールアドレスまたはパスワードに対して、ログインは失敗し、エラーメッセージが表示される
 **検証: 要件 2.3**
 
-### プロパティ 6: 経験年数の数値バリデーション
-*任意の*入力値に対して、0以上の数値のみが受け入れられ、負の数や非数値はバリデーションエラーとなる
+### プロパティ 7: ログイン成功後のリダイレクト
+*任意の*ログイン成功に対して、ユーザーはホームページまたはプロフィール作成ページにリダイレクトされる
 **検証: 要件 2.4**
 
-### プロパティ 7: 編集フォームへのデータ読み込み
-*任意の*既存プロフィールに対して、編集モードに入ると、すべてのフィールドに現在の値が正しく設定される
+### プロパティ 8: ログアウト後のセッション終了
+*任意の*ログイン済みユーザーに対して、ログアウトするとセッションが終了し、ログインページにリダイレクトされる
+**検証: 要件 2.5**
+
+### プロパティ 9: セッションの永続性
+*任意の*ログイン済みユーザーに対して、ページをリロードしてもセッション情報が保持され、ログイン状態が維持される
+**検証: 要件 2.6**
+
+### プロパティ 10: 未認証ユーザーの保護されたページへのアクセス拒否
+*任意の*未認証ユーザーに対して、プロフィール作成ページにアクセスしようとすると、ログインページにリダイレクトされる
 **検証: 要件 3.1**
 
-### プロパティ 8: プロフィール更新の永続化
-*任意の*既存プロフィールと更新データに対して、更新を保存すると、ローカルストレージに反映され、再読み込み時に更新後のデータが取得できる
+### プロパティ 11: 認証済みユーザーのプロフィール作成ページへのアクセス
+*任意の*ログイン済みユーザーに対して、プロフィール作成ページにアクセスすると、プロフィール入力フォームが表示される
 **検証: 要件 3.2**
 
-### プロパティ 9: 更新後のデータ表示
-*任意の*プロフィール更新に対して、保存が成功すると、更新されたデータがプロフィール詳細ページに表示される
+### プロパティ 12: 有効なプロフィールデータの保存
+*任意の*有効なプロフィールデータ（名前と職種が非空）に対して、プロフィールを作成すると、Supabaseデータベースに保存される
 **検証: 要件 3.3**
 
-### プロパティ 10: 編集キャンセルの不変性
+### プロパティ 13: プロフィールと所有者の紐付け
+*任意の*プロフィール作成に対して、ログイン中のユーザーIDがプロフィールの所有者として記録される
+**検証: 要件 3.4, 11.1**
+
+### プロパティ 14: 無効な必須項目の拒否
+*任意の*プロフィールデータで、名前または職種が空文字列の場合、プロフィール作成は失敗し、エラーメッセージが表示される
+**検証: 要件 3.5**
+
+### プロパティ 15: プロフィール作成後のリダイレクト
+*任意の*有効なプロフィール作成に対して、プロフィールが正常に作成されると、作成されたプロフィールのIDを含むURLにリダイレクトされる
+**検証: 要件 3.6**
+
+### プロパティ 16: URLバリデーション
+*任意の*URL文字列に対して、有効なURL形式（http/https）の場合のみ受け入れられ、無効な形式の場合はバリデーションエラーが発生する
+**検証: 要件 4.5**
+
+### プロパティ 17: スキル配列の管理
+*任意の*スキル文字列の配列（最大20個）に対して、すべてのスキルが保存され、読み込み時に同じ順序で取得できる
+**検証: 要件 4.6**
+
+### プロパティ 18: 経験年数の数値バリデーション
+*任意の*入力値に対して、0以上の数値のみが受け入れられ、負の数や非数値はバリデーションエラーとなる
+**検証: 要件 4.7**
+
+### プロパティ 19: 編集フォームへのデータ読み込み
+*任意の*既存プロフィールに対して、所有者が編集モードに入ると、すべてのフィールドに現在の値が正しく設定される
+**検証: 要件 5.1**
+
+### プロパティ 20: 未認証ユーザーの編集ページへのアクセス拒否
+*任意の*未認証ユーザーに対して、編集URLに直接アクセスしようとすると、ログインページにリダイレクトされる
+**検証: 要件 5.2**
+
+### プロパティ 21: 他人のプロフィール編集の拒否
+*任意の*ログイン済みユーザーに対して、他人のプロフィールの編集URLに直接アクセスしようとすると、アクセスが拒否されてプロフィール表示ページにリダイレクトされる
+**検証: 要件 5.3**
+
+### プロパティ 22: プロフィール更新の永続化
+*任意の*既存プロフィールと更新データに対して、更新を保存すると、Supabaseデータベースに反映され、再読み込み時に更新後のデータが取得できる
+**検証: 要件 5.4**
+
+### プロパティ 23: 更新後のデータ表示
+*任意の*プロフィール更新に対して、保存が成功すると、更新されたデータがプロフィール詳細ページに表示される
+**検証: 要件 5.5**
+
+### プロパティ 24: 編集キャンセルの不変性
 *任意の*プロフィールと変更に対して、編集をキャンセルすると、元のプロフィールデータが変更されずに保持される
-**検証: 要件 3.4**
+**検証: 要件 5.6**
 
-### プロパティ 11: プロフィールURLアクセス
+### プロパティ 25: プロフィールURLアクセス
 *任意の*保存されているプロフィールIDに対して、そのIDを含むURLにアクセスすると、対応するプロフィールの詳細ページが表示される
-**検証: 要件 4.1, 6.2**
-
-### プロパティ 12: プロフィール情報の完全表示
-*任意の*プロフィールに対して、詳細ページにはすべての設定済みフィールド（名前、職種、自己紹介、スキル、経験年数、SNSリンク）が表示される
-**検証: 要件 4.2**
-
-### プロパティ 13: 外部リンクのレンダリング
-*任意の*URL付きプロフィールに対して、GitHub、Twitter、ポートフォリオのURLがクリック可能なリンク要素としてレンダリングされる
-**検証: 要件 4.3**
-
-### プロパティ 14: ローカルストレージのラウンドトリップ
-*任意の*有効なプロフィールに対して、保存してから読み込むと、元のプロフィールと同等のデータが取得できる（シリアライゼーション・デシリアライゼーションの一貫性）
-**検証: 要件 5.1, 5.2**
-
-### プロパティ 15: 不正データのエラーハンドリング
-*任意の*破損したJSONデータや不正な形式のデータに対して、読み込み時にエラーが適切に処理され、システムは空の状態またはデフォルト状態で起動する
-**検証: 要件 5.3, 5.4**
-
-### プロパティ 16: 共有URL生成
-*任意の*プロフィールに対して、プロフィールページには共有可能なURL（プロフィールIDを含む）が生成され表示される
 **検証: 要件 6.1**
 
-### プロパティ 17: クリップボードへのURLコピー
+### プロパティ 26: プロフィール情報の完全表示
+*任意の*プロフィールに対して、詳細ページにはすべての設定済みフィールド（名前、職種、自己紹介、スキル、経験年数、SNSリンク）が表示される
+**検証: 要件 6.2**
+
+### プロパティ 27: データベースラウンドトリップ
+*任意の*有効なプロフィールに対して、Supabaseデータベースに保存してから読み込むと、元のプロフィールと同等のデータが取得できる
+**検証: 要件 7.1, 7.2**
+
+### プロパティ 28: クリップボードへのURLコピー
 *任意の*プロフィールに対して、共有ボタンをクリックすると、プロフィールURLがクリップボードにコピーされる
-**検証: 要件 6.4**
-
-### プロパティ 18: バリデーションエラーメッセージ表示
-*任意の*無効な入力に対して、対応するフィールドの近くに明確なエラーメッセージが表示される
-**検証: 要件 7.2**
-
-### プロパティ 19: ローディング状態の表示
-*任意の*非同期操作（保存、読み込み、削除）中は、ローディングインジケーターが表示される
-**検証: 要件 7.4**
-
-### プロパティ 20: プロフィール削除の永続化
-*任意の*既存プロフィールに対して、削除を確認すると、ローカルストレージからプロフィールが削除され、同じIDでの読み込みは失敗する
-**検証: 要件 8.2**
-
-### プロパティ 21: 削除後のリダイレクト
-*任意の*プロフィール削除に対して、削除が成功すると、ホームページまたはプロフィール作成ページにリダイレクトされる
-**検証: 要件 8.3**
-
-### プロパティ 22: 削除キャンセルの不変性
-*任意の*プロフィールに対して、削除をキャンセルすると、プロフィールデータが保持され、プロフィールページに留まる
 **検証: 要件 8.4**
+
+### プロパティ 29: バリデーションエラーメッセージ表示
+*任意の*無効な入力に対して、対応するフィールドの近くに明確なエラーメッセージが表示される
+**検証: 要件 9.2**
+
+### プロパティ 30: ローディング状態の表示
+*任意の*非同期操作（保存、読み込み、削除）中は、ローディングインジケーターが表示される
+**検証: 要件 9.4**
+
+### プロパティ 31: プロフィール削除確認ダイアログの表示
+*任意の*自分のプロフィールに対して、削除ボタンをクリックすると、削除確認ダイアログが表示される
+**検証: 要件 10.1**
+
+### プロパティ 32: プロフィール削除の永続化
+*任意の*既存プロフィールに対して、削除を確認すると、Supabaseデータベースからプロフィールが削除され、同じIDでの読み込みは失敗する
+**検証: 要件 10.2**
+
+### プロパティ 33: 削除後のリダイレクト
+*任意の*プロフィール削除に対して、削除が成功すると、ホームページにリダイレクトされる
+**検証: 要件 10.3**
+
+### プロパティ 34: 削除キャンセルの不変性
+*任意の*プロフィールに対して、削除をキャンセルすると、プロフィールデータが保持され、プロフィールページに留まる
+**検証: 要件 10.4**
+
+### プロパティ 35: 未認証ユーザーへの編集・削除ボタン非表示
+*任意の*プロフィールに対して、ログインしていないユーザーがプロフィールページを閲覧すると、編集ボタンと削除ボタンが非表示になる
+**検証: 要件 11.2**
+
+### プロパティ 36: 他人のプロフィールへの編集・削除ボタン非表示
+*任意の*他人のプロフィールに対して、ログイン済みユーザーがプロフィールページを閲覧すると、編集ボタンと削除ボタンが非表示になる
+**検証: 要件 11.3**
+
+### プロパティ 37: 自分のプロフィールへの編集・削除ボタン表示
+*任意の*自分のプロフィールに対して、ログイン済みユーザーがプロフィールページを閲覧すると、編集ボタンと削除ボタンが表示される
+**検証: 要件 11.4**
 
 ## エラーハンドリング
 
@@ -413,18 +751,28 @@ const profileSchema = z.object({
 - エラーは各フィールドの下に表示
 - エラーメッセージは日本語で明確に
 
-### ストレージエラー
-- ローカルストレージへのアクセス失敗時は、エラーメッセージを表示
-- データ破損時は、デフォルト状態にフォールバック
-- QuotaExceededErrorの場合は、ユーザーに通知
+### 認証エラー
+- 無効な認証情報の場合、エラーメッセージを表示
+- セッション期限切れの場合、ログインページにリダイレクト
+- Supabase Authのエラーを適切にハンドリング
+
+### データベースエラー
+- Supabaseへの接続失敗時は、エラーメッセージを表示
+- データ取得失敗時は、リトライまたはエラー通知
+- RLSによるアクセス拒否時は、適切なエラーメッセージを表示
 
 ### ネットワークエラー
-- 現在のフェーズではバックエンドがないため、該当なし
-- 将来的にバックエンドを追加する場合は、リトライロジックとエラー通知を実装
+- Supabaseへのリクエスト失敗時は、エラーメッセージを表示
+- タイムアウト時は、リトライロジックを実装
+- オフライン時は、ユーザーに通知
 
 ### 404エラー
 - 存在しないプロフィールIDへのアクセス時は、404ページを表示
 - ホームページへのリンクを提供
+
+### 認可エラー
+- 他人のプロフィールを編集・削除しようとした場合、アクセス拒否
+- 適切なエラーメッセージを表示し、プロフィール表示ページにリダイレクト
 
 ## テスト戦略
 
@@ -432,18 +780,21 @@ const profileSchema = z.object({
 
 **対象:**
 - バリデーション関数（`validation.ts`）
-- Repository実装（`LocalStorageRepository`）
-- カスタムフック（`useProfile`）
+- Repository実装（`SupabaseProfileRepository`）
+- サービス層（`authService.ts`）
+- カスタムフック（`useAuth`, `useProfile`）
 - 個別コンポーネントのロジック
 
 **ツール:**
 - Vitest
 - React Testing Library
 - @testing-library/user-event
+- Supabaseモッククライアント
 
 **例:**
 - URLバリデーション関数のテスト（有効/無効なURL）
-- LocalStorageRepositoryの各メソッド（save, findById, delete等）
+- SupabaseProfileRepositoryの各メソッド（save, findById, findByUserId, delete等）
+- authServiceの各メソッド（signUp, signIn, signOut等）
 - プロフィール作成・更新・削除の各操作
 - モックRepositoryを使用したビジネスロジックのテスト
 
@@ -457,10 +808,19 @@ const profileSchema = z.object({
 - コメント形式: `// Feature: engineer-profile-platform, Property X: [プロパティ説明]`
 
 **対象プロパティ:**
-- プロパティ1〜22（上記の正確性プロパティセクション参照）
+- プロパティ1〜37（上記の正確性プロパティセクション参照）
 
 **ジェネレーター:**
 ```typescript
+// メールアドレスのジェネレーター
+const emailArbitrary = fc.emailAddress();
+
+// パスワードのジェネレーター
+const passwordArbitrary = fc.string({ minLength: 6, maxLength: 50 });
+
+// 短いパスワードのジェネレーター
+const shortPasswordArbitrary = fc.string({ maxLength: 5 });
+
 // SNSリンクのジェネレーター
 const socialLinkArbitrary = fc.record({
   service: fc.oneof(
@@ -490,15 +850,19 @@ const invalidProfileArbitrary = fc.record({
 ### 統合テスト
 
 **対象:**
-- ページ全体のフロー（作成→表示→編集→削除）
+- ページ全体のフロー（登録→ログイン→作成→表示→編集→削除）
 - ルーティングとナビゲーション
 - Context + コンポーネントの統合
+- Supabaseとの統合
 
 **シナリオ:**
-1. プロフィール作成フローの完全テスト
-2. プロフィール編集フローの完全テスト
+1. アカウント登録からプロフィール作成までの完全フロー
+2. ログインからプロフィール編集までの完全フロー
 3. プロフィール削除フローの完全テスト
-4. ローカルストレージの永続化テスト
+4. Supabaseデータベースの永続化テスト
+5. Row Level Security (RLS)のテスト
+6. 認証ガードのテスト（未認証ユーザーのアクセス制御）
+7. 所有者制御のテスト（他人のプロフィール編集の拒否）
 
 ### E2Eテスト（オプション）
 
@@ -506,26 +870,40 @@ const invalidProfileArbitrary = fc.record({
 
 ## 実装の優先順位
 
-### フェーズ1: 基本機能
+### フェーズ1: Supabaseセットアップと認証機能
 1. プロジェクトセットアップ（Vite + React + TypeScript）
-2. データモデルとバリデーション
-3. Repository インターフェースと LocalStorageRepository 実装
+2. Supabaseプロジェクトの作成と設定
+3. Supabaseクライアントの初期化
+4. データベーススキーマの作成（profilesテーブル）
+5. Row Level Security (RLS)ポリシーの設定
+6. 認証機能の実装（AuthContext, authService）
+7. アカウント登録・ログイン・ログアウトページの実装
+8. ProtectedRouteコンポーネントの実装
+
+### フェーズ2: プロフィール基本機能
+1. データモデルとバリデーション
+2. プロフィールサービス層の実装（profileService）
+3. ProfileContextの実装
 4. プロフィール作成機能
 5. プロフィール表示機能
+6. 所有者判定ロジックの実装
 
-### フェーズ2: 編集・削除機能
+### フェーズ3: 編集・削除機能
 1. プロフィール編集機能
-2. プロフィール削除機能
-3. エラーハンドリング
+2. 編集権限チェック（所有者のみ）
+3. プロフィール削除機能
+4. 削除権限チェック（所有者のみ）
+5. エラーハンドリング
 
-### フェーズ3: 共有機能とUI改善
+### フェーズ4: 共有機能とUI改善
 1. URL共有機能
 2. クリップボードコピー
 3. レスポンシブデザイン
 4. ローディング状態
+5. ナビゲーションの改善（ログイン状態に応じた表示）
 
-### フェーズ4: テストとリファクタリング
-1. ユニットテスト
+### フェーズ5: テストとリファクタリング
+1. ユニットテスト（サービス層、バリデーション）
 2. プロパティベーステスト
-3. 統合テスト
+3. 統合テスト（認証フロー、プロフィールCRUD、RLS）
 4. コードリファクタリング
