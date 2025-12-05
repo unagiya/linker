@@ -27,11 +27,11 @@ interface ProfileCardProps {
 function getServiceIcon(service: string): string {
   switch (service) {
     case PredefinedService.TWITTER:
-      return "𝕏"; // Twitter/X
+      return "🐦"; // Twitter/X
     case PredefinedService.GITHUB:
-      return "⚙"; // GitHub
+      return "💻"; // GitHub
     case PredefinedService.FACEBOOK:
-      return "f"; // Facebook
+      return "👥"; // Facebook
     default:
       return "🔗"; // その他
   }
