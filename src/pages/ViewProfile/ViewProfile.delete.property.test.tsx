@@ -5,7 +5,8 @@
 import { describe, it, beforeEach } from "vitest";
 import * as fc from "fast-check";
 import { renderHook, waitFor } from "@testing-library/react";
-import { ProfileProvider, useProfileContext } from "../../contexts/ProfileContext";
+import { AuthProvider } from "../../contexts/AuthContext";
+import { ProfileProvider, useProfile } from "../../contexts/ProfileContext";
 import { LocalStorageRepository } from "../../repositories";
 import type { ProfileFormData, Profile } from "../../types";
 import type { ReactNode } from "react";
@@ -55,18 +56,21 @@ describe("Property 20: プロフィール削除の永続化", () => {
         // 各反復の前にクリア
         await repository.clear();
 
-        // ProfileProviderをラップするwrapper
+        // AuthProviderとProfileProviderをラップするwrapper
         const wrapper = ({ children }: { children: ReactNode }) => (
-          <ProfileProvider repository={repository}>{children}</ProfileProvider>
+          <AuthProvider>
+            <ProfileProvider repository={repository}>{children}</ProfileProvider>
+          </AuthProvider>
         );
 
-        // useProfileContextフックをレンダリング
-        const { result } = renderHook(() => useProfileContext(), { wrapper });
+        // useProfileフックをレンダリング
+        const { result } = renderHook(() => useProfile(), { wrapper });
 
         // プロフィールを作成
+        const testUserId = crypto.randomUUID();
         let createdProfile: Profile | undefined;
         await waitFor(async () => {
-          createdProfile = await result.current.createProfile(formData);
+          createdProfile = await result.current.createProfile(testUserId, formData);
         });
 
         if (!createdProfile) return false;
@@ -146,18 +150,21 @@ describe("Property 21: 削除後のリダイレクト", () => {
           navigatedTo = path;
         };
 
-        // ProfileProviderをラップするwrapper
+        // AuthProviderとProfileProviderをラップするwrapper
         const wrapper = ({ children }: { children: ReactNode }) => (
-          <ProfileProvider repository={repository}>{children}</ProfileProvider>
+          <AuthProvider>
+            <ProfileProvider repository={repository}>{children}</ProfileProvider>
+          </AuthProvider>
         );
 
-        // useProfileContextフックをレンダリング
-        const { result } = renderHook(() => useProfileContext(), { wrapper });
+        // useProfileフックをレンダリング
+        const { result } = renderHook(() => useProfile(), { wrapper });
 
         // プロフィールを作成
+        const testUserId = crypto.randomUUID();
         let createdProfile: Profile | undefined;
         await waitFor(async () => {
-          createdProfile = await result.current.createProfile(formData);
+          createdProfile = await result.current.createProfile(testUserId, formData);
         });
 
         if (!createdProfile) return false;
@@ -224,18 +231,21 @@ describe("Property 22: 削除キャンセルの不変性", () => {
         // 各反復の前にクリア
         await repository.clear();
 
-        // ProfileProviderをラップするwrapper
+        // AuthProviderとProfileProviderをラップするwrapper
         const wrapper = ({ children }: { children: ReactNode }) => (
-          <ProfileProvider repository={repository}>{children}</ProfileProvider>
+          <AuthProvider>
+            <ProfileProvider repository={repository}>{children}</ProfileProvider>
+          </AuthProvider>
         );
 
-        // useProfileContextフックをレンダリング
-        const { result } = renderHook(() => useProfileContext(), { wrapper });
+        // useProfileフックをレンダリング
+        const { result } = renderHook(() => useProfile(), { wrapper });
 
         // プロフィールを作成
+        const testUserId = crypto.randomUUID();
         let createdProfile: Profile | undefined;
         await waitFor(async () => {
-          createdProfile = await result.current.createProfile(formData);
+          createdProfile = await result.current.createProfile(testUserId, formData);
         });
 
         if (!createdProfile) return false;

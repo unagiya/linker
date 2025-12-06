@@ -5,7 +5,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useProfileContext } from "../../contexts/ProfileContext";
+import { useProfile } from "../../contexts/ProfileContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { ProfileCard } from "../../components/ProfileCard";
 import {
   LoadingSpinner,
@@ -17,6 +18,7 @@ import "./ViewProfile.css";
 export function ViewProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const {
     profile,
     loadProfile,
@@ -24,7 +26,7 @@ export function ViewProfile() {
     loading,
     error,
     clearError,
-  } = useProfileContext();
+  } = useProfile();
   const [notFound, setNotFound] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -116,9 +118,6 @@ export function ViewProfile() {
     return null;
   }
 
-  // 所有者判定（簡易版：現在は常にtrueとする。将来的に認証機能を追加）
-  const isOwner = true;
-
   return (
     <div className="view-profile">
       <div className="view-profile-container">
@@ -132,7 +131,7 @@ export function ViewProfile() {
 
         <ProfileCard
           profile={profile}
-          isOwner={isOwner}
+          currentUserId={user?.id || null}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onShare={handleShare}

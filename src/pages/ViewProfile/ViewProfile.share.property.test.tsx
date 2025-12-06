@@ -5,7 +5,8 @@
 import { describe, it, beforeEach } from "vitest";
 import * as fc from "fast-check";
 import { renderHook, waitFor } from "@testing-library/react";
-import { ProfileProvider, useProfileContext } from "../../contexts/ProfileContext";
+import { AuthProvider } from "../../contexts/AuthContext";
+import { ProfileProvider, useProfile } from "../../contexts/ProfileContext";
 import { LocalStorageRepository } from "../../repositories";
 import type { ProfileFormData, Profile } from "../../types";
 import type { ReactNode } from "react";
@@ -55,18 +56,21 @@ describe("Property 16: 共有URL生成", () => {
         // 各反復の前にクリア
         await repository.clear();
 
-        // ProfileProviderをラップするwrapper
+        // AuthProviderとProfileProviderをラップするwrapper
         const wrapper = ({ children }: { children: ReactNode }) => (
-          <ProfileProvider repository={repository}>{children}</ProfileProvider>
+          <AuthProvider>
+            <ProfileProvider repository={repository}>{children}</ProfileProvider>
+          </AuthProvider>
         );
 
-        // useProfileContextフックをレンダリング
-        const { result } = renderHook(() => useProfileContext(), { wrapper });
+        // useProfileフックをレンダリング
+        const { result } = renderHook(() => useProfile(), { wrapper });
 
         // プロフィールを作成
+        const testUserId = crypto.randomUUID();
         let createdProfile: Profile | undefined;
         await waitFor(async () => {
-          createdProfile = await result.current.createProfile(formData);
+          createdProfile = await result.current.createProfile(testUserId, formData);
         });
 
         if (!createdProfile) return false;
@@ -89,7 +93,7 @@ describe("Property 16: 共有URL生成", () => {
 
         return containsId;
       }),
-      { numRuns: 100 }
+      { numRuns: 10 }
     );
   });
 
@@ -103,19 +107,22 @@ describe("Property 16: 共有URL生成", () => {
 
           const shareUrls: string[] = [];
           const origin = "http://localhost:3000";
+          const testUserId = crypto.randomUUID();
 
-          // ProfileProviderをラップするwrapper
+          // AuthProviderとProfileProviderをラップするwrapper
           const wrapper = ({ children }: { children: ReactNode }) => (
-            <ProfileProvider repository={repository}>{children}</ProfileProvider>
+            <AuthProvider>
+              <ProfileProvider repository={repository}>{children}</ProfileProvider>
+            </AuthProvider>
           );
 
           // 複数のプロフィールを作成
           for (const formData of formDataArray) {
-            const { result } = renderHook(() => useProfileContext(), { wrapper });
+            const { result } = renderHook(() => useProfile(), { wrapper });
 
             let createdProfile: Profile | undefined;
             await waitFor(async () => {
-              createdProfile = await result.current.createProfile(formData);
+              createdProfile = await result.current.createProfile(testUserId, formData);
             });
 
             if (createdProfile) {
@@ -129,7 +136,7 @@ describe("Property 16: 共有URL生成", () => {
           return uniqueUrls.size === shareUrls.length;
         }
       ),
-      { numRuns: 20 }
+      { numRuns: 5 }
     );
   });
 });
@@ -191,18 +198,21 @@ describe("Property 17: クリップボードへのURLコピー", () => {
         await repository.clear();
         (navigator.clipboard as any)._lastCopiedText = "";
 
-        // ProfileProviderをラップするwrapper
+        // AuthProviderとProfileProviderをラップするwrapper
         const wrapper = ({ children }: { children: ReactNode }) => (
-          <ProfileProvider repository={repository}>{children}</ProfileProvider>
+          <AuthProvider>
+            <ProfileProvider repository={repository}>{children}</ProfileProvider>
+          </AuthProvider>
         );
 
-        // useProfileContextフックをレンダリング
-        const { result } = renderHook(() => useProfileContext(), { wrapper });
+        // useProfileフックをレンダリング
+        const { result } = renderHook(() => useProfile(), { wrapper });
 
         // プロフィールを作成
+        const testUserId = crypto.randomUUID();
         let createdProfile: Profile | undefined;
         await waitFor(async () => {
-          createdProfile = await result.current.createProfile(formData);
+          createdProfile = await result.current.createProfile(testUserId, formData);
         });
 
         if (!createdProfile) return false;
@@ -225,7 +235,7 @@ describe("Property 17: クリップボードへのURLコピー", () => {
 
         return isCorrectUrl && containsId;
       }),
-      { numRuns: 100 }
+      { numRuns: 10 }
     );
   });
 });

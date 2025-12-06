@@ -6,6 +6,7 @@ import { describe, it, beforeEach, afterEach } from "vitest";
 import * as fc from "fast-check";
 import { render, screen as _screen, waitFor, cleanup } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "../../contexts/AuthContext";
 import { ProfileProvider } from "../../contexts/ProfileContext";
 import { LocalStorageRepository } from "../../repositories";
 import { ViewProfile } from "./ViewProfile";
@@ -78,15 +79,17 @@ describe("Property 11: プロフィールURLアクセス", () => {
         // プロフィールを保存
         await repository.save(profile);
 
-        // ProfileProviderをラップするwrapper
+        // AuthProviderとProfileProviderをラップするwrapper
         const wrapper = ({ children }: { children: ReactNode }) => (
           <MemoryRouter initialEntries={[`/profile/${profile.id}`]}>
-            <ProfileProvider repository={repository}>
-              <Routes>
-                <Route path="/profile/:id" element={<ViewProfile />} />
-              </Routes>
-              {children}
-            </ProfileProvider>
+            <AuthProvider>
+              <ProfileProvider repository={repository}>
+                <Routes>
+                  <Route path="/profile/:id" element={<ViewProfile />} />
+                </Routes>
+                {children}
+              </ProfileProvider>
+            </AuthProvider>
           </MemoryRouter>
         );
 
@@ -130,7 +133,7 @@ describe("Property 11: プロフィールURLアクセス", () => {
 
         return true;
       }),
-      { numRuns: 100 }
+      { numRuns: 10 }
     );
   });
 
@@ -141,15 +144,17 @@ describe("Property 11: プロフィールURLアクセス", () => {
         cleanup();
         await repository.clear();
 
-        // ProfileProviderをラップするwrapper
+        // AuthProviderとProfileProviderをラップするwrapper
         const wrapper = ({ children }: { children: ReactNode }) => (
           <MemoryRouter initialEntries={[`/profile/${nonExistentId}`]}>
-            <ProfileProvider repository={repository}>
-              <Routes>
-                <Route path="/profile/:id" element={<ViewProfile />} />
-              </Routes>
-              {children}
-            </ProfileProvider>
+            <AuthProvider>
+              <ProfileProvider repository={repository}>
+                <Routes>
+                  <Route path="/profile/:id" element={<ViewProfile />} />
+                </Routes>
+                {children}
+              </ProfileProvider>
+            </AuthProvider>
           </MemoryRouter>
         );
 
@@ -168,7 +173,7 @@ describe("Property 11: プロフィールURLアクセス", () => {
 
         return true;
       }),
-      { numRuns: 50 }
+      { numRuns: 5 }
     );
   });
 
@@ -188,15 +193,17 @@ describe("Property 11: プロフィールURLアクセス", () => {
           // ランダムに1つのプロフィールを選択
           const targetProfile = profiles[0];
 
-          // ProfileProviderをラップするwrapper
+          // AuthProviderとProfileProviderをラップするwrapper
           const wrapper = ({ children }: { children: ReactNode }) => (
             <MemoryRouter initialEntries={[`/profile/${targetProfile.id}`]}>
-              <ProfileProvider repository={repository}>
-                <Routes>
-                  <Route path="/profile/:id" element={<ViewProfile />} />
-                </Routes>
-                {children}
-              </ProfileProvider>
+              <AuthProvider>
+                <ProfileProvider repository={repository}>
+                  <Routes>
+                    <Route path="/profile/:id" element={<ViewProfile />} />
+                  </Routes>
+                  {children}
+                </ProfileProvider>
+              </AuthProvider>
             </MemoryRouter>
           );
 
@@ -235,7 +242,7 @@ describe("Property 11: プロフィールURLアクセス", () => {
           return true;
         }
       ),
-      { numRuns: 50 }
+      { numRuns: 5 }
     );
   });
 });

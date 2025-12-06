@@ -4,6 +4,7 @@
  */
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
 import { ProfileProvider } from "./contexts/ProfileContext";
 import { LocalStorageRepository } from "./repositories";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -22,20 +23,22 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <ProfileProvider repository={repository}>
-          <div className="app">
-            <Navigation />
-            <main className="app-main">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/create" element={<CreateProfile />} />
-                <Route path="/profile/:id" element={<ViewProfile />} />
-                <Route path="/profile/:id/edit" element={<EditProfile />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-          </div>
-        </ProfileProvider>
+        <AuthProvider>
+          <ProfileProvider repository={repository}>
+            <div className="app">
+              <Navigation />
+              <main className="app-main">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/create" element={<CreateProfile />} />
+                  <Route path="/profile/:id" element={<ViewProfile />} />
+                  <Route path="/profile/:id/edit" element={<EditProfile />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+            </div>
+          </ProfileProvider>
+        </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>
   );
