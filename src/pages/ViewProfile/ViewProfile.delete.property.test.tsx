@@ -12,13 +12,13 @@ import type { ProfileFormData, Profile } from "../../types";
 import type { ReactNode } from "react";
 
 /**
- * Feature: engineer-profile-platform, Property 20: プロフィール削除の永続化
- * 検証: 要件 8.2
+ * Feature: engineer-profile-platform, Property 32: プロフィール削除の永続化
+ * 検証: 要件 10.2
  *
  * 任意の既存プロフィールに対して、削除を確認すると、
- * ローカルストレージからプロフィールが削除され、同じIDでの読み込みは失敗する
+ * Supabaseデータベースからプロフィールが削除され、同じIDでの読み込みは失敗する
  */
-describe("Property 20: プロフィール削除の永続化", () => {
+describe("Property 32: プロフィール削除の永続化", () => {
   let repository: LocalStorageRepository;
 
   beforeEach(async () => {
@@ -98,13 +98,13 @@ describe("Property 20: プロフィール削除の永続化", () => {
 });
 
 /**
- * Feature: engineer-profile-platform, Property 21: 削除後のリダイレクト
- * 検証: 要件 8.3
+ * Feature: engineer-profile-platform, Property 33: 削除後のリダイレクト
+ * 検証: 要件 10.3
  *
  * 任意のプロフィール削除に対して、削除が成功すると、
- * ホームページまたはプロフィール作成ページにリダイレクトされる
+ * ホームページにリダイレクトされる
  */
-describe("Property 21: 削除後のリダイレクト", () => {
+describe("Property 33: 削除後のリダイレクト", () => {
   let repository: LocalStorageRepository;
 
   beforeEach(async () => {
@@ -187,13 +187,13 @@ describe("Property 21: 削除後のリダイレクト", () => {
 });
 
 /**
- * Feature: engineer-profile-platform, Property 22: 削除キャンセルの不変性
- * 検証: 要件 8.4
+ * Feature: engineer-profile-platform, Property 34: 削除キャンセルの不変性
+ * 検証: 要件 10.4
  *
  * 任意のプロフィールに対して、削除をキャンセルすると、
  * プロフィールデータが保持され、プロフィールページに留まる
  */
-describe("Property 22: 削除キャンセルの不変性", () => {
+describe("Property 34: 削除キャンセルの不変性", () => {
   let repository: LocalStorageRepository;
 
   beforeEach(async () => {
