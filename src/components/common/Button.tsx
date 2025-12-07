@@ -8,12 +8,15 @@ import "./Button.css";
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** ボタンのバリアント */
   variant?: "primary" | "secondary" | "danger";
+  /** ボタンのサイズ */
+  size?: "small" | "medium" | "large";
   /** フルワイド表示 */
   fullWidth?: boolean;
 }
 
 export function Button({
   variant = "primary",
+  size = "medium",
   fullWidth = false,
   className = "",
   children,
@@ -22,6 +25,7 @@ export function Button({
   const classes = [
     "button",
     `button--${variant}`,
+    `button--${size}`,
     fullWidth ? "button--full-width" : "",
     className,
   ]

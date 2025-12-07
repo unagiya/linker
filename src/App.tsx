@@ -11,6 +11,8 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Navigation } from "./components/Navigation";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Home } from "./pages/Home";
+import { SignUp } from "./pages/SignUp";
+import { SignIn } from "./pages/SignIn";
 import { CreateProfile } from "./pages/CreateProfile";
 import { ViewProfile } from "./pages/ViewProfile";
 import { EditProfile } from "./pages/EditProfile";
@@ -31,7 +33,16 @@ function App() {
               <main className="app-main">
                 <Routes>
                   <Route path="/" element={<Home />} />
-                  <Route path="/create" element={<CreateProfile />} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/signin" element={<SignIn />} />
+                  <Route
+                    path="/create"
+                    element={
+                      <ProtectedRoute>
+                        <CreateProfile />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="/profile/:id" element={<ViewProfile />} />
                   <Route
                     path="/profile/:id/edit"
