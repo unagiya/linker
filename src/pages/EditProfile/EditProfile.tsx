@@ -5,7 +5,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useProfileContext } from "../../contexts/ProfileContext";
+import { useProfile } from "../../contexts/ProfileContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { ProfileForm } from "../../components/ProfileForm";
 import type { ProfileFormData } from "../../types";
 import { LoadingSpinner, ErrorMessage } from "../../components/common";
@@ -14,16 +15,21 @@ import "./EditProfile.css";
 export function EditProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { loadProfile, updateProfile, loading, error, clearError } =
-    useProfileContext();
+    useProfile();
   const [initialData, setInitialData] = useState<ProfileFormData | undefined>();
   const [notFound, setNotFound] = useState(false);
+  const [notOwner, setNotOwner] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadProfile(id).then((loadedProfile) => {
         if (!loadedProfile) {
           setNotFound(true);
+        } else if (user && loadedProfile.user_id !== user.id) {
+          // 所有者でない場合、アクセスを拒否
+          setNotOwner(true);
         } else {
           // プロフィールデータをフォームデータに変換
           const formData: ProfileFormData = {
@@ -41,7 +47,7 @@ export function EditProfile() {
         }
       });
     }
-  }, [id, loadProfile]);
+  }, [id, loadProfile, user]);
 
   const handleSubmit = async (data: ProfileFormData) => {
     if (!id) return;
@@ -92,6 +98,27 @@ export function EditProfile() {
     );
   }
 
+  if (notOwner) {
+    return (
+      <div className="edit-profile">
+        <div className="edit-profile-not-found">
+          <h1 className="edit-profile-not-found-title">
+            アクセスが拒否されました
+          </h1>
+          <p className="edit-profile-not-found-message">
+            このプロフィールを編集する権限がありません。自分のプロフィールのみ編集できます。
+          </p>
+          <button
+            className="edit-profile-not-found-button"
+            onClick={() => navigate(id ? `/profile/${id}` : "/")}
+          >
+            プロフィールページに戻る
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!initialData) {
     return null;
   }
@@ -112,7 +139,7 @@ export function EditProfile() {
           initialData={initialData}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
-          isSubmitting={loading}
+          loading={loading}
         />
       </div>
     </div>

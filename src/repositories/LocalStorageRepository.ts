@@ -49,6 +49,22 @@ export class LocalStorageRepository implements ProfileRepository {
   }
 
   /**
+   * ユーザーIDでプロフィールを検索する
+   * @param userId ユーザーID
+   * @returns プロフィール、または存在しない場合はnull
+   */
+  async findByUserId(userId: string): Promise<Profile | null> {
+    try {
+      const profiles = await this.loadProfileMap();
+      const profile = Object.values(profiles).find((p) => p.user_id === userId);
+      return profile || null;
+    } catch (error) {
+      console.error("プロフィールの読み込みに失敗しました:", error);
+      return null;
+    }
+  }
+
+  /**
    * すべてのプロフィールを取得する
    * @returns プロフィールの配列
    */

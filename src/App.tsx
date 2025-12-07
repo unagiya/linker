@@ -9,6 +9,7 @@ import { ProfileProvider } from "./contexts/ProfileContext";
 import { LocalStorageRepository } from "./repositories";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Navigation } from "./components/Navigation";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Home } from "./pages/Home";
 import { CreateProfile } from "./pages/CreateProfile";
 import { ViewProfile } from "./pages/ViewProfile";
@@ -32,7 +33,14 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/create" element={<CreateProfile />} />
                   <Route path="/profile/:id" element={<ViewProfile />} />
-                  <Route path="/profile/:id/edit" element={<EditProfile />} />
+                  <Route
+                    path="/profile/:id/edit"
+                    element={
+                      <ProtectedRoute>
+                        <EditProfile />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
