@@ -4,10 +4,13 @@
  */
 
 import { Link } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../../components/common";
 import "./Home.css";
 
 export function Home() {
+  const { user } = useAuth();
+
   return (
     <div className="home">
       <div className="home-container">
@@ -21,9 +24,20 @@ export function Home() {
             名刺のように簡単にプロフィールを作成・共有できます。
           </p>
           <div className="home-actions">
-            <Link to="/create">
-              <Button variant="primary">プロフィールを作成</Button>
-            </Link>
+            {user ? (
+              <Link to="/create">
+                <Button variant="primary">プロフィールを作成</Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/signup">
+                  <Button variant="primary">アカウント登録</Button>
+                </Link>
+                <Link to="/signin">
+                  <Button variant="secondary">ログイン</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
