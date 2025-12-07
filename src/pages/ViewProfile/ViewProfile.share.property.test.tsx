@@ -12,13 +12,13 @@ import type { ProfileFormData, Profile } from "../../types";
 import type { ReactNode } from "react";
 
 /**
- * Feature: engineer-profile-platform, Property 16: 共有URL生成
- * 検証: 要件 6.1
+ * Feature: engineer-profile-platform, Property 28: クリップボードへのURLコピー（URL生成）
+ * 検証: 要件 8.1, 8.4
  *
  * 任意のプロフィールに対して、プロフィールページには共有可能なURL
  * （プロフィールIDを含む）が生成され表示される
  */
-describe("Property 16: 共有URL生成", () => {
+describe("Property 28: クリップボードへのURLコピー（URL生成）", () => {
   let repository: LocalStorageRepository;
 
   beforeEach(async () => {
@@ -142,13 +142,13 @@ describe("Property 16: 共有URL生成", () => {
 });
 
 /**
- * Feature: engineer-profile-platform, Property 17: クリップボードへのURLコピー
- * 検証: 要件 6.4
+ * Feature: engineer-profile-platform, Property 28: クリップボードへのURLコピー
+ * 検証: 要件 8.4
  *
  * 任意のプロフィールに対して、共有ボタンをクリックすると、
  * プロフィールURLがクリップボードにコピーされる
  */
-describe("Property 17: クリップボードへのURLコピー", () => {
+describe("Property 28: クリップボードへのURLコピー", () => {
   let repository: LocalStorageRepository;
 
   beforeEach(async () => {
