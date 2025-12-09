@@ -6,7 +6,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProfileProvider } from './contexts/ProfileContext';
-import { LocalStorageRepository } from './repositories';
+import { SupabaseProfileRepository } from './repositories';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Navigation } from './components/Navigation';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -20,7 +20,7 @@ import { NotFound } from './pages/NotFound';
 import './App.css';
 
 // Repositoryのインスタンスを作成
-const repository = new LocalStorageRepository();
+const repository = new SupabaseProfileRepository();
 
 export function App() {
   return (
