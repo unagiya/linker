@@ -13,30 +13,70 @@ VALUES ('profile-images', 'profile-images', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 3. ストレージRLSポリシー: 誰でも画像を閲覧可能
-CREATE POLICY IF NOT EXISTS "プロフィール画像は誰でも閲覧可能"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'profile-images');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'storage' 
+    AND tablename = 'objects' 
+    AND policyname = 'プロフィール画像は誰でも閲覧可能'
+  ) THEN
+    CREATE POLICY "プロフィール画像は誰でも閲覧可能"
+      ON storage.objects FOR SELECT
+      USING (bucket_id = 'profile-images');
+  END IF;
+END $$;
 
 -- 4. ストレージRLSポリシー: ログイン済みユーザーは自分の画像をアップロード可能
-CREATE POLICY IF NOT EXISTS "ユーザーは自分の画像をアップロード可能"
-  ON storage.objects FOR INSERT
-  WITH CHECK (
-    bucket_id = 'profile-images' AND
-    auth.uid()::text = (storage.foldername(name))[1]
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'storage' 
+    AND tablename = 'objects' 
+    AND policyname = 'ユーザーは自分の画像をアップロード可能'
+  ) THEN
+    CREATE POLICY "ユーザーは自分の画像をアップロード可能"
+      ON storage.objects FOR INSERT
+      WITH CHECK (
+        bucket_id = 'profile-images' AND
+        (storage.foldername(name))[1] = auth.uid()::text
+      );
+  END IF;
+END $$;
 
 -- 5. ストレージRLSポリシー: ユーザーは自分の画像のみ更新可能
-CREATE POLICY IF NOT EXISTS "ユーザーは自分の画像のみ更新可能"
-  ON storage.objects FOR UPDATE
-  USING (
-    bucket_id = 'profile-images' AND
-    auth.uid()::text = (storage.foldername(name))[1]
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'storage' 
+    AND tablename = 'objects' 
+    AND policyname = 'ユーザーは自分の画像のみ更新可能'
+  ) THEN
+    CREATE POLICY "ユーザーは自分の画像のみ更新可能"
+      ON storage.objects FOR UPDATE
+      USING (
+        bucket_id = 'profile-images' AND
+        (storage.foldername(name))[1] = auth.uid()::text
+      );
+  END IF;
+END $$;
 
 -- 6. ストレージRLSポリシー: ユーザーは自分の画像のみ削除可能
-CREATE POLICY IF NOT EXISTS "ユーザーは自分の画像のみ削除可能"
-  ON storage.objects FOR DELETE
-  USING (
-    bucket_id = 'profile-images' AND
-    auth.uid()::text = (storage.foldername(name))[1]
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'storage' 
+    AND tablename = 'objects' 
+    AND policyname = 'ユーザーは自分の画像のみ削除可能'
+  ) THEN
+    CREATE POLICY "ユーザーは自分の画像のみ削除可能"
+      ON storage.objects FOR DELETE
+      USING (
+        bucket_id = 'profile-images' AND
+        (storage.foldername(name))[1] = auth.uid()::text
+      );
+  END IF;
+END $$;
