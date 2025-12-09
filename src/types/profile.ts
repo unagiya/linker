@@ -10,6 +10,7 @@ export const PredefinedService = {
   TWITTER: 'twitter',
   GITHUB: 'github',
   FACEBOOK: 'facebook',
+  LINKEDIN: 'linkedin',
 } as const;
 
 /**
@@ -49,6 +50,8 @@ export interface Profile {
   jobTitle: string;
   /** 自己紹介文 */
   bio?: string;
+  /** プロフィール画像のURL（Supabase Storage） */
+  imageUrl?: string;
   /** スキルの配列 */
   skills: string[];
   /** 経験年数 */
@@ -69,6 +72,12 @@ export interface ProfileFormData {
   name: string;
   jobTitle: string;
   bio: string;
+  /** アップロードする画像ファイル */
+  imageFile?: File;
+  /** 既存の画像URL（編集時） */
+  imageUrl?: string;
+  /** 画像削除フラグ */
+  removeImage?: boolean;
   skills: string[];
   /** フォームでは文字列として扱う */
   yearsOfExperience: string;
