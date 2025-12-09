@@ -4,9 +4,9 @@
  */
 
 import { supabase } from '../lib/supabase';
-import { Profile } from '../types/profile';
-import { ProfileRow, ProfileInsert, ProfileUpdate } from '../types/database';
-import { ProfileRepository } from './ProfileRepository';
+import type { Profile } from '../types/profile';
+import type { ProfileRow, ProfileInsert, ProfileUpdate } from '../types/database';
+import type { ProfileRepository } from './ProfileRepository';
 
 /**
  * Supabaseデータベースを使用したProfileRepositoryの実装

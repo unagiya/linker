@@ -12,6 +12,7 @@ describe('LocalStorageRepository', () => {
   // テスト用のプロフィールデータ
   const createTestProfile = (id: string): Profile => ({
     id,
+    user_id: 'test-user-id',
     name: 'テストユーザー',
     jobTitle: 'ソフトウェアエンジニア',
     bio: 'テスト用のプロフィールです',

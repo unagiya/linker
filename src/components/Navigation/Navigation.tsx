@@ -25,7 +25,11 @@ export function Navigation() {
 
   const handleMyProfile = async () => {
     try {
-      const profile = await loadMyProfile();
+      if (!user) {
+        navigate('/signin');
+        return;
+      }
+      const profile = await loadMyProfile(user.id);
       if (profile) {
         navigate(`/profile/${profile.id}`);
       } else {

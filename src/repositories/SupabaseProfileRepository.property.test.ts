@@ -5,7 +5,7 @@
 import { describe, it, vi, beforeEach } from 'vitest';
 import * as fc from 'fast-check';
 import { SupabaseProfileRepository } from './SupabaseProfileRepository';
-import { Profile } from '../types/profile';
+import type { Profile } from '../types/profile';
 
 // Supabaseクライアントをモック
 vi.mock('../lib/supabase', () => ({

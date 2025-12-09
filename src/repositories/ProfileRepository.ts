@@ -3,7 +3,7 @@
  * プロフィールデータの永続化を抽象化するRepository
  */
 
-import { Profile } from '../types/profile';
+import type { Profile } from '../types/profile';
 
 /**
  * プロフィールデータの永続化を抽象化するインターフェース

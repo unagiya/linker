@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SupabaseProfileRepository } from './SupabaseProfileRepository';
-import { Profile } from '../types/profile';
+import type { Profile } from '../types/profile';
 
 // Supabaseクライアントをモック
 vi.mock('../lib/supabase', () => ({
