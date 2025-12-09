@@ -17,8 +17,11 @@ Linkerは、エンジニアが自己紹介を行い、他のエンジニアと�
 - **Profile URL**: プロフィールを共有するための一意のURL
 - **Supabase**: バックエンドサービス（認証、データベース、ストレージを提供）
 - **Supabase Auth**: Supabaseの認証サービス
+- **Supabase Storage**: Supabaseのファイルストレージサービス
 - **Row Level Security (RLS)**: データベースレベルのアクセス制御機能
 - **Session**: ログイン状態を管理するセッション情報
+- **Profile Image**: ユーザーのプロフィール画像（アバター）
+- **Social Icon**: SNSサービスの公式アイコン
 
 ## 要件
 
@@ -67,14 +70,18 @@ Linkerは、エンジニアが自己紹介を行い、他のエンジニアと�
 
 #### 受け入れ基準
 
-1. WHEN ユーザーがプロフィールフォームに入力する THEN Linker SHALL 以下の情報を受け付ける：名前、職種、自己紹介文、スキル、経験年数、SNS・外部リンク（サービス名とURL）
-2. WHEN ユーザーがSNSリンクを追加する THEN Linker SHALL 定義済みサービス（Twitter、GitHub、Facebook）またはカスタムサービス名を選択できるようにする
-3. WHEN ユーザーが定義済みサービスを選択する THEN Linker SHALL 適切なサービス名とアイコンを表示する
+1. WHEN ユーザーがプロフィールフォームに入力する THEN Linker SHALL 以下の情報を受け付ける：名前、職種、自己紹介文、スキル、経験年数、プロフィール画像、SNS・外部リンク（サービス名とURL）
+2. WHEN ユーザーがSNSリンクを追加する THEN Linker SHALL 定義済みサービス（Twitter、GitHub、Facebook、LinkedIn）またはカスタムサービス名を選択できるようにする
+3. WHEN ユーザーが定義済みサービスを選択する THEN Linker SHALL 適切なサービス名と公式アイコンを表示する
 4. WHEN ユーザーがカスタムサービスを選択する THEN Linker SHALL 自由にサービス名を入力できるようにする
 5. WHEN ユーザーがSNSリンクのURLを入力する THEN Linker SHALL 有効なURL形式であることを検証する
 6. WHEN ユーザーがスキルを入力する THEN Linker SHALL 複数のスキルをタグ形式で管理できるようにする
 7. WHEN ユーザーが経験年数を入力する THEN Linker SHALL 0以上の数値のみを受け付ける
 8. WHEN ユーザーがSNSリンクを削除する THEN Linker SHALL 指定されたリンクをリストから削除する
+9. WHEN ユーザーがプロフィール画像をアップロードする THEN Linker SHALL 画像ファイル（JPEG、PNG、WebP）を受け付ける
+10. WHEN ユーザーが画像をアップロードする THEN Linker SHALL ファイルサイズが5MB以下であることを検証する
+11. WHEN 画像がアップロードされる THEN Linker SHALL Supabase Storageに画像を保存する
+12. WHEN プロフィール画像が保存される THEN Linker SHALL 画像URLをプロフィールデータに記録する
 
 ### 要件 5: プロフィール編集
 
@@ -96,9 +103,12 @@ Linkerは、エンジニアが自己紹介を行い、他のエンジニアと�
 #### 受け入れ基準
 
 1. WHEN ユーザーが共有されたプロフィールURLにアクセスする THEN Linker SHALL そのプロフィールの詳細ページを表示する
-2. WHEN プロフィール詳細ページが表示される THEN Linker SHALL すべてのプロフィール情報（名前、職種、自己紹介、スキル、経験年数、SNSリンク）を表示する
-3. WHEN SNSリンクが表示される THEN Linker SHALL 各リンクをサービス名とともにクリック可能なリンクとして表示する
-4. WHEN プロフィールが名刺のように表示される THEN Linker SHALL 見やすく整理されたレイアウトで情報を提示する
+2. WHEN プロフィール詳細ページが表示される THEN Linker SHALL すべてのプロフィール情報（プロフィール画像、名前、職種、自己紹介、スキル、経験年数、SNSリンク）を表示する
+3. WHEN プロフィール画像が設定されている THEN Linker SHALL 画像を名刺の上部に表示する
+4. WHEN プロフィール画像が設定されていない THEN Linker SHALL デフォルトのアバター画像を表示する
+5. WHEN SNSリンクが表示される THEN Linker SHALL 定義済みサービスの場合は公式アイコンとともにクリック可能なリンクとして表示する
+6. WHEN カスタムサービスのSNSリンクが表示される THEN Linker SHALL サービス名とともにクリック可能なリンクとして表示する
+7. WHEN プロフィールが名刺のように表示される THEN Linker SHALL 見やすく整理されたレイアウトで情報を提示する
 
 ### 要件 7: データ永続化
 
@@ -156,3 +166,20 @@ Linkerは、エンジニアが自己紹介を行い、他のエンジニアと�
 4. WHEN ログイン済みユーザーが自分のプロフィールページを閲覧する THEN Linker SHALL 編集ボタンと削除ボタンを表示する
 5. WHEN Supabaseデータベースにアクセスする THEN Linker SHALL Row Level Security (RLS)を使用してユーザーが自分のプロフィールのみを編集・削除できるように制限する
 6. WHEN ユーザーが別のデバイスからログインする THEN Linker SHALL 同じプロフィールの編集・削除権限を持つ
+
+### 要件 12: プロフィール画像管理
+
+**ユーザーストーリー:** エンジニアとして、プロフィールに自分の写真を追加したいので、より個人的で親しみやすいプロフィールを作成したい。
+
+#### 受け入れ基準
+
+1. WHEN ユーザーがプロフィールフォームで画像アップロードボタンをクリックする THEN Linker SHALL ファイル選択ダイアログを表示する
+2. WHEN ユーザーが画像ファイルを選択する THEN Linker SHALL 画像のプレビューを表示する
+3. WHEN ユーザーが5MBを超える画像をアップロードしようとする THEN Linker SHALL エラーメッセージを表示してアップロードを防止する
+4. WHEN ユーザーが画像以外のファイルをアップロードしようとする THEN Linker SHALL エラーメッセージを表示してアップロードを防止する
+5. WHEN プロフィールが保存される THEN Linker SHALL 画像をSupabase Storageの`profile-images`バケットにアップロードする
+6. WHEN 画像がアップロードされる THEN Linker SHALL 一意のファイル名（ユーザーID + タイムスタンプ）で保存する
+7. WHEN 既存の画像がある状態で新しい画像をアップロードする THEN Linker SHALL 古い画像をSupabase Storageから削除する
+8. WHEN プロフィールが削除される THEN Linker SHALL 関連する画像もSupabase Storageから削除する
+9. WHEN 画像のアップロードに失敗する THEN Linker SHALL エラーメッセージを表示してプロフィール保存を継続する（画像なしで保存）
+10. WHEN ユーザーが画像を削除する THEN Linker SHALL プロフィールからimage_urlを削除してSupabase Storageから画像を削除する

@@ -87,7 +87,8 @@ interface User {
 enum PredefinedService {
   TWITTER = "twitter",
   GITHUB = "github",
-  FACEBOOK = "facebook"
+  FACEBOOK = "facebook",
+  LINKEDIN = "linkedin"
 }
 
 type SocialServiceType = PredefinedService | string;
@@ -110,6 +111,7 @@ interface Profile {
   name: string;                  // 名前（必須）
   jobTitle: string;              // 職種（必須）
   bio?: string;                  // 自己紹介文
+  imageUrl?: string;             // プロフィール画像のURL（Supabase Storage）
   skills: string[];              // スキルの配列
   yearsOfExperience?: number;    // 経験年数
   socialLinks: SocialLink[];     // SNS・外部リンクの配列
@@ -124,6 +126,8 @@ interface ProfileFormData {
   name: string;
   jobTitle: string;
   bio: string;
+  imageFile?: File;              // アップロードする画像ファイル
+  imageUrl?: string;             // 既存の画像URL（編集時）
   skills: string[];
   yearsOfExperience: string;     // フォームでは文字列として扱う
   socialLinks: Array<{
@@ -143,6 +147,7 @@ CREATE TABLE profiles (
   name TEXT NOT NULL,
   job_title TEXT NOT NULL,
   bio TEXT,
+  image_url TEXT,
   skills TEXT[] DEFAULT '{}',
   years_of_experience INTEGER,
   social_links JSONB DEFAULT '[]',
@@ -187,6 +192,42 @@ CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON profiles
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
+```
+
+**Supabase Storageバケット:**
+```sql
+-- profile-imagesバケットの作成
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('profile-images', 'profile-images', true);
+
+-- ストレージポリシー: 誰でも画像を閲覧可能
+CREATE POLICY "プロフィール画像は誰でも閲覧可能"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'profile-images');
+
+-- ストレージポリシー: ログイン済みユーザーは自分の画像をアップロード可能
+CREATE POLICY "ユーザーは自分の画像をアップロード可能"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'profile-images' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- ストレージポリシー: ユーザーは自分の画像のみ更新可能
+CREATE POLICY "ユーザーは自分の画像のみ更新可能"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'profile-images' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- ストレージポリシー: ユーザーは自分の画像のみ削除可能
+CREATE POLICY "ユーザーは自分の画像のみ削除可能"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'profile-images' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
 ```
 
 ### 主要コンポーネント
@@ -491,6 +532,92 @@ async function getSession(): Promise<Session | null>
 async function getCurrentUser(): Promise<User | null>
 ```
 
+### ImageService
+Supabase Storageを使用した画像管理サービス。
+
+**関数:**
+```typescript
+// 画像をアップロード
+async function uploadProfileImage(userId: string, file: File): Promise<string>
+
+// 画像を削除
+async function deleteProfileImage(imageUrl: string): Promise<void>
+
+// 画像URLから公開URLを取得
+function getPublicUrl(path: string): string
+
+// ファイルバリデーション
+function validateImageFile(file: File): { valid: boolean; error?: string }
+```
+
+**実装例:**
+```typescript
+import { supabase } from '../lib/supabase';
+
+const BUCKET_NAME = 'profile-images';
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+export function validateImageFile(file: File): { valid: boolean; error?: string } {
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    return { valid: false, error: 'JPEG、PNG、WebP形式の画像のみアップロード可能です' };
+  }
+  
+  if (file.size > MAX_FILE_SIZE) {
+    return { valid: false, error: 'ファイルサイズは5MB以下にしてください' };
+  }
+  
+  return { valid: true };
+}
+
+export async function uploadProfileImage(userId: string, file: File): Promise<string> {
+  const validation = validateImageFile(file);
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+  
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${userId}/${Date.now()}.${fileExt}`;
+  
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+  
+  if (error) throw error;
+  
+  return getPublicUrl(data.path);
+}
+
+export async function deleteProfileImage(imageUrl: string): Promise<void> {
+  // URLからパスを抽出
+  const url = new URL(imageUrl);
+  const pathMatch = url.pathname.match(/\/storage\/v1\/object\/public\/profile-images\/(.+)/);
+  
+  if (!pathMatch) {
+    throw new Error('無効な画像URLです');
+  }
+  
+  const filePath = pathMatch[1];
+  
+  const { error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .remove([filePath]);
+  
+  if (error) throw error;
+}
+
+export function getPublicUrl(path: string): string {
+  const { data } = supabase.storage
+    .from(BUCKET_NAME)
+    .getPublicUrl(path);
+  
+  return data.publicUrl;
+}
+```
+
 **実装例:**
 ```typescript
 import { supabase } from '../lib/supabase';
@@ -586,10 +713,25 @@ const profileSchema = z.object({
 });
 ```
 
+**画像バリデーション:**
+```typescript
+const imageFileSchema = z.instanceof(File).refine(
+  (file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type),
+  "JPEG、PNG、WebP形式の画像のみアップロード可能です"
+).refine(
+  (file) => file.size <= 5 * 1024 * 1024,
+  "ファイルサイズは5MB以下にしてください"
+);
+```
+
 **サービス選択のUI:**
-- ドロップダウンで定義済みサービス（Twitter, GitHub, Facebook）を選択可能
+- ドロップダウンで定義済みサービス（Twitter, GitHub, Facebook, LinkedIn）を選択可能
 - "その他"を選択した場合、カスタムサービス名の入力フィールドを表示
-- 定義済みサービスには適切なアイコンを表示
+- 定義済みサービスには公式アイコン（react-icons等を使用）を表示
+  - Twitter: FaXTwitter (旧Twitter/X)
+  - GitHub: FaGithub
+  - Facebook: FaFacebook
+  - LinkedIn: FaLinkedin
 
 
 ## 正確性プロパティ
@@ -744,6 +886,50 @@ const profileSchema = z.object({
 *任意の*自分のプロフィールに対して、ログイン済みユーザーがプロフィールページを閲覧すると、編集ボタンと削除ボタンが表示される
 **検証: 要件 11.4**
 
+### プロパティ 38: 大きすぎる画像ファイルの拒否
+*任意の*5MBを超える画像ファイルに対して、アップロードは失敗し、エラーメッセージが表示される
+**検証: 要件 12.3**
+
+### プロパティ 39: 無効なファイルタイプの拒否
+*任意の*画像形式以外のファイル（JPEG、PNG、WebP以外）に対して、アップロードは失敗し、エラーメッセージが表示される
+**検証: 要件 12.4**
+
+### プロパティ 40: 有効な画像形式の受け入れ
+*任意の*有効な画像ファイル（JPEG、PNG、WebP）に対して、ファイルサイズが5MB以下であればアップロードが成功する
+**検証: 要件 4.9**
+
+### プロパティ 41: 画像のStorageアップロード
+*任意の*有効な画像ファイルに対して、プロフィール保存時にSupabase Storageの`profile-images`バケットにアップロードされる
+**検証: 要件 12.5**
+
+### プロパティ 42: 一意のファイル名生成
+*任意の*画像アップロードに対して、ファイル名はユーザーIDとタイムスタンプを含む一意の名前で保存される
+**検証: 要件 12.6**
+
+### プロパティ 43: 画像URLのプロフィールへの記録
+*任意の*画像アップロードに対して、アップロード成功後に画像の公開URLがプロフィールのimage_urlフィールドに記録される
+**検証: 要件 4.12**
+
+### プロパティ 44: 既存画像の削除（更新時）
+*任意の*既存の画像を持つプロフィールに対して、新しい画像をアップロードすると、古い画像がSupabase Storageから削除される
+**検証: 要件 12.7**
+
+### プロパティ 45: 画像の削除（プロフィール削除時）
+*任意の*画像を持つプロフィールに対して、プロフィールを削除すると、関連する画像もSupabase Storageから削除される
+**検証: 要件 12.8**
+
+### プロパティ 46: 画像の削除（ユーザー操作）
+*任意の*画像を持つプロフィールに対して、ユーザーが画像削除を実行すると、プロフィールからimage_urlが削除され、Supabase Storageから画像が削除される
+**検証: 要件 12.10**
+
+### プロパティ 47: 定義済みサービスの公式アイコン表示
+*任意の*定義済みサービス（Twitter、GitHub、Facebook、LinkedIn）のSNSリンクに対して、プロフィール表示時に対応する公式アイコンが表示される
+**検証: 要件 6.5**
+
+### プロパティ 48: カスタムサービスのサービス名表示
+*任意の*カスタムサービスのSNSリンクに対して、プロフィール表示時にサービス名がテキストとして表示される
+**検証: 要件 6.6**
+
 ## エラーハンドリング
 
 ### バリデーションエラー
@@ -808,7 +994,7 @@ const profileSchema = z.object({
 - コメント形式: `// Feature: engineer-profile-platform, Property X: [プロパティ説明]`
 
 **対象プロパティ:**
-- プロパティ1〜37（上記の正確性プロパティセクション参照）
+- プロパティ1〜48（上記の正確性プロパティセクション参照）
 
 **ジェネレーター:**
 ```typescript
@@ -844,6 +1030,27 @@ const profileArbitrary = fc.record({
 const invalidProfileArbitrary = fc.record({
   name: fc.constantFrom("", null, undefined),
   jobTitle: fc.constantFrom("", null, undefined)
+});
+
+// 画像ファイルのジェネレーター（モック）
+const imageFileArbitrary = fc.record({
+  name: fc.string({ minLength: 1, maxLength: 50 }).map(s => `${s}.jpg`),
+  type: fc.constantFrom('image/jpeg', 'image/png', 'image/webp'),
+  size: fc.integer({ min: 1, max: 5 * 1024 * 1024 }) // 5MB以下
+});
+
+// 大きすぎる画像ファイルのジェネレーター
+const oversizedImageFileArbitrary = fc.record({
+  name: fc.string({ minLength: 1, maxLength: 50 }).map(s => `${s}.jpg`),
+  type: fc.constantFrom('image/jpeg', 'image/png', 'image/webp'),
+  size: fc.integer({ min: 5 * 1024 * 1024 + 1, max: 10 * 1024 * 1024 }) // 5MB超過
+});
+
+// 無効なファイルタイプのジェネレーター
+const invalidFileTypeArbitrary = fc.record({
+  name: fc.string({ minLength: 1, maxLength: 50 }).map(s => `${s}.pdf`),
+  type: fc.constantFrom('application/pdf', 'text/plain', 'video/mp4'),
+  size: fc.integer({ min: 1, max: 1024 * 1024 })
 });
 ```
 
@@ -907,3 +1114,16 @@ const invalidProfileArbitrary = fc.record({
 2. プロパティベーステスト
 3. 統合テスト（認証フロー、プロフィールCRUD、RLS）
 4. コードリファクタリング
+
+### フェーズ6: 画像アップロード機能とSNSリンク改修
+1. Supabase Storageバケットの作成とRLSポリシーの設定
+2. ImageServiceの実装（アップロード、削除、バリデーション）
+3. Profile型とProfileFormData型の更新（imageUrl、imageFileフィールド追加）
+4. データベーススキーマの更新（image_urlカラム追加）
+5. PredefinedServiceにLinkedInを追加
+6. ProfileFormコンポーネントに画像アップロード機能を追加
+7. ProfileCardコンポーネントに画像表示機能を追加
+8. SNSリンクに公式アイコン（react-icons）を統合
+9. 画像バリデーションのユニットテスト
+10. 画像アップロード・削除のプロパティベーステスト
+11. SNSアイコン表示のテスト
