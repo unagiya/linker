@@ -22,7 +22,7 @@ import "./App.css";
 // Repositoryのインスタンスを作成
 const repository = new LocalStorageRepository();
 
-function App() {
+export function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
