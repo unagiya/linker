@@ -49,6 +49,7 @@ describe('Property 27: データベースラウンドトリップ', () => {
     name: fc.string({ minLength: 1, maxLength: 100 }),
     jobTitle: fc.string({ minLength: 1, maxLength: 100 }),
     bio: fc.option(fc.string({ maxLength: 500 }), { nil: undefined }),
+    imageUrl: fc.option(fc.webUrl({ validSchemes: ['https'] }), { nil: undefined }),
     skills: fc.array(fc.string({ minLength: 1, maxLength: 50 }), {
       maxLength: 20,
     }),
@@ -73,6 +74,7 @@ describe('Property 27: データベースラウンドトリップ', () => {
           name: profile.name,
           job_title: profile.jobTitle,
           bio: profile.bio || null,
+          image_url: profile.imageUrl || null,
           skills: profile.skills,
           years_of_experience:
             profile.yearsOfExperience !== undefined ? profile.yearsOfExperience : null,
@@ -201,6 +203,7 @@ describe('Property 27: データベースラウンドトリップ', () => {
             name: originalProfile.name,
             job_title: originalProfile.jobTitle,
             bio: originalProfile.bio || null,
+            image_url: originalProfile.imageUrl || null,
             skills: originalProfile.skills,
             years_of_experience:
               originalProfile.yearsOfExperience !== undefined
@@ -217,6 +220,7 @@ describe('Property 27: データベースラウンドトリップ', () => {
             name: profile.name,
             job_title: profile.jobTitle,
             bio: profile.bio || null,
+            image_url: profile.imageUrl || null,
             skills: profile.skills,
             years_of_experience:
               profile.yearsOfExperience !== undefined ? profile.yearsOfExperience : null,
@@ -326,6 +330,138 @@ describe('Property 27: データベースラウンドトリップ', () => {
         }
       ),
       { numRuns: 2 }
+    );
+  });
+});
+
+/**
+ * Feature: engineer-profile-platform, Property 43: 画像URL保存検証
+ * 検証: 要件 12.1
+ *
+ * 任意の有効な画像URLを持つプロフィールに対して、データベースに保存してから読み込むと、
+ * 画像URLが正しく保存・取得される
+ */
+describe('Property 43: 画像URL保存検証', () => {
+  let repository: SupabaseProfileRepository;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    repository = new SupabaseProfileRepository();
+  });
+
+  // 画像URLを持つプロフィールのジェネレーター
+  const profileWithImageArbitrary = fc.record({
+    id: fc.uuid(),
+    user_id: fc.uuid(),
+    name: fc.string({ minLength: 1, maxLength: 100 }),
+    jobTitle: fc.string({ minLength: 1, maxLength: 100 }),
+    bio: fc.option(fc.string({ maxLength: 500 }), { nil: undefined }),
+    imageUrl: fc.webUrl({ validSchemes: ['https'] }), // 必ず画像URLを持つ
+    skills: fc.array(fc.string({ minLength: 1, maxLength: 50 }), {
+      maxLength: 20,
+    }),
+    yearsOfExperience: fc.option(fc.nat({ max: 100 }), { nil: undefined }),
+    socialLinks: fc.array(
+      fc.record({
+        id: fc.uuid(),
+        service: fc.oneof(
+          fc.constantFrom('twitter', 'github', 'facebook'),
+          fc.string({ minLength: 1, maxLength: 50 })
+        ),
+        url: fc.webUrl({ validSchemes: ['http', 'https'] }),
+      }),
+      { maxLength: 10 }
+    ),
+    createdAt: fc
+      .integer({ min: 946684800000, max: 1924905600000 })
+      .map((timestamp) => new Date(timestamp).toISOString()),
+    updatedAt: fc
+      .integer({ min: 946684800000, max: 1924905600000 })
+      .map((timestamp) => new Date(timestamp).toISOString()),
+  });
+
+  it('画像URLを持つプロフィールを保存して読み込むと、画像URLが正しく取得できる', async () => {
+    await fc.assert(
+      fc.asyncProperty(profileWithImageArbitrary, async (profile: Profile) => {
+        // データベースの行データに変換
+        const profileRow = {
+          id: profile.id,
+          user_id: profile.user_id,
+          name: profile.name,
+          job_title: profile.jobTitle,
+          bio: profile.bio || null,
+          image_url: profile.imageUrl || null,
+          skills: profile.skills,
+          years_of_experience:
+            profile.yearsOfExperience !== undefined ? profile.yearsOfExperience : null,
+          social_links: profile.socialLinks,
+          created_at: profile.createdAt,
+          updated_at: profile.updatedAt,
+        };
+
+        // save時のモック設定（新規作成）
+        const mockSelectForFind = vi.fn().mockReturnThis();
+        const mockEqForFind = vi.fn().mockReturnThis();
+        const mockSingleForFind = vi.fn().mockResolvedValue({
+          data: null,
+          error: { code: 'PGRST116', message: 'Not found' },
+        });
+
+        const mockInsert = vi.fn().mockResolvedValue({
+          data: profileRow,
+          error: null,
+        });
+
+        // findById時のモック設定（保存後の読み込み）
+        const mockSelectForLoad = vi.fn().mockReturnThis();
+        const mockEqForLoad = vi.fn().mockReturnThis();
+        const mockSingleForLoad = vi.fn().mockResolvedValue({
+          data: profileRow,
+          error: null,
+        });
+
+        // モックの設定
+        let callCount = 0;
+        vi.mocked(supabase.from).mockImplementation(() => {
+          callCount++;
+          if (callCount === 1) {
+            const mockChain = {
+              select: mockSelectForFind,
+              eq: mockEqForFind,
+              single: mockSingleForFind,
+            };
+            mockSelectForFind.mockReturnValue(mockChain);
+            mockEqForFind.mockReturnValue(mockChain);
+            return mockChain as any;
+          } else if (callCount === 2) {
+            return {
+              insert: mockInsert,
+            } as any;
+          } else {
+            const mockChain = {
+              select: mockSelectForLoad,
+              eq: mockEqForLoad,
+              single: mockSingleForLoad,
+            };
+            mockSelectForLoad.mockReturnValue(mockChain);
+            mockEqForLoad.mockReturnValue(mockChain);
+            return mockChain as any;
+          }
+        });
+
+        // プロフィールを保存
+        await repository.save(profile);
+
+        // プロフィールを読み込み
+        const loadedProfile = await repository.findById(profile.id);
+
+        // 読み込んだプロフィールがnullでないことを確認
+        if (!loadedProfile) return false;
+
+        // 画像URLが正しく保存・取得されることを確認
+        return loadedProfile.imageUrl === profile.imageUrl;
+      }),
+      { numRuns: 10 }
     );
   });
 });

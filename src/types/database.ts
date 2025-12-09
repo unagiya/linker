@@ -20,6 +20,8 @@ export interface ProfileRow {
   job_title: string;
   /** 自己紹介文 */
   bio: string | null;
+  /** プロフィール画像のURL（Supabase Storage） */
+  image_url: string | null;
   /** スキルの配列 */
   skills: string[];
   /** 経験年数 */
@@ -46,6 +48,8 @@ export interface ProfileInsert {
   job_title: string;
   /** 自己紹介文 */
   bio?: string | null;
+  /** プロフィール画像のURL（Supabase Storage） */
+  image_url?: string | null;
   /** スキルの配列 */
   skills?: string[];
   /** 経験年数 */
@@ -68,6 +72,8 @@ export interface ProfileUpdate {
   job_title?: string;
   /** 自己紹介文 */
   bio?: string | null;
+  /** プロフィール画像のURL（Supabase Storage） */
+  image_url?: string | null;
   /** スキルの配列 */
   skills?: string[];
   /** 経験年数 */
