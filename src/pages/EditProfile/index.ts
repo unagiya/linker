@@ -2,4 +2,4 @@
  * EditProfileのエクスポート
  */
 
-export * from "./EditProfile";
+export * from './EditProfile';

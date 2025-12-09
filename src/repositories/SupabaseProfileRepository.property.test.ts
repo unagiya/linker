@@ -2,20 +2,20 @@
  * SupabaseProfileRepositoryのプロパティベーステスト
  */
 
-import { describe, it, vi, beforeEach } from "vitest";
-import * as fc from "fast-check";
-import { SupabaseProfileRepository } from "./SupabaseProfileRepository";
-import { Profile } from "../types/profile";
+import { describe, it, vi, beforeEach } from 'vitest';
+import * as fc from 'fast-check';
+import { SupabaseProfileRepository } from './SupabaseProfileRepository';
+import { Profile } from '../types/profile';
 
 // Supabaseクライアントをモック
-vi.mock("../lib/supabase", () => ({
+vi.mock('../lib/supabase', () => ({
   supabase: {
     from: vi.fn(),
   },
 }));
 
 // モックされたsupabaseをインポート
-import { supabase } from "../lib/supabase";
+import { supabase } from '../lib/supabase';
 
 /**
  * Feature: engineer-profile-platform, Property 27: データベースラウンドトリップ
@@ -24,7 +24,7 @@ import { supabase } from "../lib/supabase";
  * 任意の有効なプロフィールに対して、Supabaseデータベースに保存してから読み込むと、
  * 元のプロフィールと同等のデータが取得できる
  */
-describe("Property 27: データベースラウンドトリップ", () => {
+describe('Property 27: データベースラウンドトリップ', () => {
   let repository: SupabaseProfileRepository;
 
   beforeEach(() => {
@@ -36,10 +36,10 @@ describe("Property 27: データベースラウンドトリップ", () => {
   const socialLinkArbitrary = fc.record({
     id: fc.uuid(),
     service: fc.oneof(
-      fc.constantFrom("twitter", "github", "facebook"), // 定義済みサービス
+      fc.constantFrom('twitter', 'github', 'facebook'), // 定義済みサービス
       fc.string({ minLength: 1, maxLength: 50 }) // カスタムサービス
     ),
-    url: fc.webUrl({ validSchemes: ["http", "https"] }),
+    url: fc.webUrl({ validSchemes: ['http', 'https'] }),
   });
 
   // プロフィールのジェネレーター
@@ -63,7 +63,7 @@ describe("Property 27: データベースラウンドトリップ", () => {
       .map((timestamp) => new Date(timestamp).toISOString()),
   });
 
-  it("プロフィールを保存して読み込むと、元のデータと同等のデータが取得できる", async () => {
+  it('プロフィールを保存して読み込むと、元のデータと同等のデータが取得できる', async () => {
     await fc.assert(
       fc.asyncProperty(profileArbitrary, async (profile: Profile) => {
         // データベースの行データに変換
@@ -75,9 +75,7 @@ describe("Property 27: データベースラウンドトリップ", () => {
           bio: profile.bio || null,
           skills: profile.skills,
           years_of_experience:
-            profile.yearsOfExperience !== undefined
-              ? profile.yearsOfExperience
-              : null,
+            profile.yearsOfExperience !== undefined ? profile.yearsOfExperience : null,
           social_links: profile.socialLinks,
           created_at: profile.createdAt,
           updated_at: profile.updatedAt,
@@ -89,7 +87,7 @@ describe("Property 27: データベースラウンドトリップ", () => {
         const mockEqForFind = vi.fn().mockReturnThis();
         const mockSingleForFind = vi.fn().mockResolvedValue({
           data: null,
-          error: { code: "PGRST116", message: "Not found" },
+          error: { code: 'PGRST116', message: 'Not found' },
         });
 
         const mockInsert = vi.fn().mockResolvedValue({
@@ -147,8 +145,7 @@ describe("Property 27: データベースラウンドトリップ", () => {
         if (!loadedProfile) return false;
 
         // bioの正規化（空文字列とundefinedを同等として扱う）
-        const normalizeBio = (bio: string | undefined) =>
-          bio === "" ? undefined : bio;
+        const normalizeBio = (bio: string | undefined) => (bio === '' ? undefined : bio);
 
         // すべてのフィールドが一致することを確認
         const fieldsMatch =
@@ -164,9 +161,7 @@ describe("Property 27: データベースラウンドトリップ", () => {
         // スキル配列が一致することを確認
         const skillsMatch =
           loadedProfile.skills.length === profile.skills.length &&
-          loadedProfile.skills.every(
-            (skill, index) => skill === profile.skills[index]
-          );
+          loadedProfile.skills.every((skill, index) => skill === profile.skills[index]);
 
         // SNSリンク配列が一致することを確認
         const socialLinksMatch =
@@ -186,7 +181,7 @@ describe("Property 27: データベースラウンドトリップ", () => {
     );
   });
 
-  it("プロフィールを更新して読み込むと、更新後のデータが取得できる", async () => {
+  it('プロフィールを更新して読み込むと、更新後のデータが取得できる', async () => {
     await fc.assert(
       fc.asyncProperty(
         profileArbitrary,
@@ -224,9 +219,7 @@ describe("Property 27: データベースラウンドトリップ", () => {
             bio: profile.bio || null,
             skills: profile.skills,
             years_of_experience:
-              profile.yearsOfExperience !== undefined
-                ? profile.yearsOfExperience
-                : null,
+              profile.yearsOfExperience !== undefined ? profile.yearsOfExperience : null,
             social_links: profile.socialLinks,
             created_at: profile.createdAt,
             updated_at: profile.updatedAt,
@@ -299,8 +292,7 @@ describe("Property 27: データベースラウンドトリップ", () => {
           if (!loadedProfile) return false;
 
           // bioの正規化（空文字列とundefinedを同等として扱う）
-          const normalizeBio = (bio: string | undefined) =>
-            bio === "" ? undefined : bio;
+          const normalizeBio = (bio: string | undefined) => (bio === '' ? undefined : bio);
 
           // すべてのフィールドが更新後のデータと一致することを確認
           const fieldsMatch =
@@ -316,9 +308,7 @@ describe("Property 27: データベースラウンドトリップ", () => {
           // スキル配列が一致することを確認
           const skillsMatch =
             loadedProfile.skills.length === profile.skills.length &&
-            loadedProfile.skills.every(
-              (skill, index) => skill === profile.skills[index]
-            );
+            loadedProfile.skills.every((skill, index) => skill === profile.skills[index]);
 
           // SNSリンク配列が一致することを確認
           const socialLinksMatch =

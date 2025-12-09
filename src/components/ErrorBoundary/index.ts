@@ -2,4 +2,4 @@
  * ErrorBoundaryのエクスポート
  */
 
-export * from "./ErrorBoundary";
+export * from './ErrorBoundary';

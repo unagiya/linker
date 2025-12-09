@@ -3,11 +3,11 @@
  * ナビゲーションバー
  */
 
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
-import { useProfile } from "../../contexts/ProfileContext";
-import { Button } from "../common/Button";
-import "./Navigation.css";
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { useProfile } from '../../contexts/ProfileContext';
+import { Button } from '../common/Button';
+import './Navigation.css';
 
 export function Navigation() {
   const { user, signOut } = useAuth();
@@ -17,9 +17,9 @@ export function Navigation() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate("/");
+      navigate('/');
     } catch (error) {
-      console.error("ログアウトエラー:", error);
+      console.error('ログアウトエラー:', error);
     }
   };
 
@@ -29,11 +29,11 @@ export function Navigation() {
       if (profile) {
         navigate(`/profile/${profile.id}`);
       } else {
-        navigate("/create");
+        navigate('/create');
       }
     } catch (error) {
-      console.error("プロフィール読み込みエラー:", error);
-      navigate("/create");
+      console.error('プロフィール読み込みエラー:', error);
+      navigate('/create');
     }
   };
 
@@ -46,10 +46,7 @@ export function Navigation() {
         <div className="navigation-links">
           {user ? (
             <>
-              <button
-                onClick={handleMyProfile}
-                className="navigation-link navigation-button"
-              >
+              <button onClick={handleMyProfile} className="navigation-link navigation-button">
                 マイプロフィール
               </button>
               <Link to="/create" className="navigation-link">

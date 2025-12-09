@@ -2,10 +2,10 @@
  * LocalStorageRepositoryのプロパティベーステスト
  */
 
-import { describe, it, beforeEach } from "vitest";
-import * as fc from "fast-check";
-import { LocalStorageRepository } from "./LocalStorageRepository";
-import type { Profile } from "../types";
+import { describe, it, beforeEach } from 'vitest';
+import * as fc from 'fast-check';
+import { LocalStorageRepository } from './LocalStorageRepository';
+import type { Profile } from '../types';
 
 /**
  * Feature: engineer-profile-platform, Property 14: ローカルストレージのラウンドトリップ
@@ -14,7 +14,7 @@ import type { Profile } from "../types";
  * 任意の有効なプロフィールに対して、保存してから読み込むと、
  * 元のプロフィールと同等のデータが取得できる
  */
-describe("Property 14: ローカルストレージのラウンドトリップ", () => {
+describe('Property 14: ローカルストレージのラウンドトリップ', () => {
   let repository: LocalStorageRepository;
 
   beforeEach(async () => {
@@ -25,12 +25,8 @@ describe("Property 14: ローカルストレージのラウンドトリップ", 
   // プロフィールのジェネレーター
   const profileArbitrary = fc.record({
     id: fc.uuid(),
-    name: fc
-      .string({ minLength: 1, maxLength: 100 })
-      .filter((s) => s.trim().length > 0), // 空白のみの文字列を除外
-    jobTitle: fc
-      .string({ minLength: 1, maxLength: 100 })
-      .filter((s) => s.trim().length > 0), // 空白のみの文字列を除外
+    name: fc.string({ minLength: 1, maxLength: 100 }).filter((s) => s.trim().length > 0), // 空白のみの文字列を除外
+    jobTitle: fc.string({ minLength: 1, maxLength: 100 }).filter((s) => s.trim().length > 0), // 空白のみの文字列を除外
     bio: fc.option(fc.string({ maxLength: 500 })),
     skills: fc.array(fc.string({ minLength: 1, maxLength: 50 }), {
       maxLength: 20,
@@ -40,7 +36,7 @@ describe("Property 14: ローカルストレージのラウンドトリップ", 
       fc.record({
         id: fc.uuid(),
         service: fc.string({ minLength: 1, maxLength: 50 }),
-        url: fc.webUrl({ validSchemes: ["http", "https"] }),
+        url: fc.webUrl({ validSchemes: ['http', 'https'] }),
       }),
       { maxLength: 10 }
     ),
@@ -52,7 +48,7 @@ describe("Property 14: ローカルストレージのラウンドトリップ", 
       .map((timestamp) => new Date(timestamp).toISOString()),
   }) as fc.Arbitrary<Profile>;
 
-  it("保存したプロフィールを読み込むと同じデータが取得できる", async () => {
+  it('保存したプロフィールを読み込むと同じデータが取得できる', async () => {
     await fc.assert(
       fc.asyncProperty(profileArbitrary, async (profile) => {
         // 各反復の前にクリア
@@ -73,8 +69,7 @@ describe("Property 14: ローカルストレージのラウンドトリップ", 
           loaded.bio === profile.bio &&
           JSON.stringify(loaded.skills) === JSON.stringify(profile.skills) &&
           loaded.yearsOfExperience === profile.yearsOfExperience &&
-          JSON.stringify(loaded.socialLinks) ===
-            JSON.stringify(profile.socialLinks) &&
+          JSON.stringify(loaded.socialLinks) === JSON.stringify(profile.socialLinks) &&
           loaded.createdAt === profile.createdAt &&
           loaded.updatedAt === profile.updatedAt
         );
@@ -83,7 +78,7 @@ describe("Property 14: ローカルストレージのラウンドトリップ", 
     );
   });
 
-  it("複数のプロフィールを保存して読み込める", async () => {
+  it('複数のプロフィールを保存して読み込める', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(profileArbitrary, { minLength: 1, maxLength: 5 }),
@@ -113,7 +108,7 @@ describe("Property 14: ローカルストレージのラウンドトリップ", 
     );
   });
 
-  it("保存、削除、再保存のラウンドトリップが正しく動作する", async () => {
+  it('保存、削除、再保存のラウンドトリップが正しく動作する', async () => {
     await fc.assert(
       fc.asyncProperty(profileArbitrary, async (profile) => {
         // 各反復の前にクリア
@@ -136,11 +131,7 @@ describe("Property 14: ローカルストレージのラウンドトリップ", 
         const reloaded = await repository.findById(profile.id);
 
         // 同等のデータが取得できる
-        return (
-          reloaded !== null &&
-          reloaded.id === profile.id &&
-          reloaded.name === profile.name
-        );
+        return reloaded !== null && reloaded.id === profile.id && reloaded.name === profile.name;
       }),
       { numRuns: 2 }
     );
@@ -154,7 +145,7 @@ describe("Property 14: ローカルストレージのラウンドトリップ", 
  * 任意の破損したJSONデータや不正な形式のデータに対して、
  * 読み込み時にエラーが適切に処理され、システムは空の状態またはデフォルト状態で起動する
  */
-describe("Property 15: 不正データのエラーハンドリング", () => {
+describe('Property 15: 不正データのエラーハンドリング', () => {
   let repository: LocalStorageRepository;
 
   beforeEach(async () => {
@@ -162,7 +153,7 @@ describe("Property 15: 不正データのエラーハンドリング", () => {
     await repository.clear();
   });
 
-  it("破損したJSONデータの場合、空配列を返す", async () => {
+  it('破損したJSONデータの場合、空配列を返す', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.string().filter((s) => {
@@ -175,7 +166,7 @@ describe("Property 15: 不正データのエラーハンドリング", () => {
         }),
         async (invalidJson) => {
           // 破損したデータを設定
-          localStorage.setItem("linker_profiles", invalidJson);
+          localStorage.setItem('linker_profiles', invalidJson);
 
           // 読み込み
           const all = await repository.findAll();
@@ -188,18 +179,18 @@ describe("Property 15: 不正データのエラーハンドリング", () => {
     );
   });
 
-  it("不正な形式のデータの場合、空配列を返す", async () => {
+  it('不正な形式のデータの場合、空配列を返す', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.oneof(
-          fc.constant("[]"), // 配列（期待される形式はオブジェクト）
-          fc.constant("null"),
-          fc.constant("123"),
+          fc.constant('[]'), // 配列（期待される形式はオブジェクト）
+          fc.constant('null'),
+          fc.constant('123'),
           fc.constant('"string"')
         ),
         async (invalidFormat) => {
           // 不正な形式のデータを設定
-          localStorage.setItem("linker_profiles", invalidFormat);
+          localStorage.setItem('linker_profiles', invalidFormat);
 
           // 読み込み
           const all = await repository.findAll();
@@ -212,7 +203,7 @@ describe("Property 15: 不正データのエラーハンドリング", () => {
     );
   });
 
-  it("破損したデータがある場合、findByIdはnullを返す", async () => {
+  it('破損したデータがある場合、findByIdはnullを返す', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.string().filter((s) => {
@@ -226,7 +217,7 @@ describe("Property 15: 不正データのエラーハンドリング", () => {
         fc.uuid(),
         async (invalidJson, id) => {
           // 破損したデータを設定
-          localStorage.setItem("linker_profiles", invalidJson);
+          localStorage.setItem('linker_profiles', invalidJson);
 
           // 読み込み
           const found = await repository.findById(id);

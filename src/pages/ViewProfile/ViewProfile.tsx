@@ -3,30 +3,19 @@
  * プロフィール表示ページ
  */
 
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useProfile } from "../../contexts/ProfileContext";
-import { useAuth } from "../../contexts/AuthContext";
-import { ProfileCard } from "../../components/ProfileCard";
-import {
-  LoadingSpinner,
-  ErrorMessage,
-  ConfirmDialog,
-} from "../../components/common";
-import "./ViewProfile.css";
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useProfile } from '../../contexts/ProfileContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { ProfileCard } from '../../components/ProfileCard';
+import { LoadingSpinner, ErrorMessage, ConfirmDialog } from '../../components/common';
+import './ViewProfile.css';
 
 export function ViewProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const {
-    profile,
-    loadProfile,
-    deleteProfile,
-    loading,
-    error,
-    clearError,
-  } = useProfile();
+  const { profile, loadProfile, deleteProfile, loading, error, clearError } = useProfile();
   const [notFound, setNotFound] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -59,9 +48,9 @@ export function ViewProfile() {
     try {
       await deleteProfile(id);
       // 削除成功時、ホームページにリダイレクト
-      navigate("/");
+      navigate('/');
     } catch (err) {
-      console.error("プロフィール削除エラー:", err);
+      console.error('プロフィール削除エラー:', err);
       setIsDeleting(false);
       setShowDeleteDialog(false);
     }
@@ -81,7 +70,7 @@ export function ViewProfile() {
       setShareSuccess(true);
       setTimeout(() => setShareSuccess(false), 3000);
     } catch (err) {
-      console.error("URLのコピーに失敗しました:", err);
+      console.error('URLのコピーに失敗しました:', err);
     }
   };
 
@@ -97,16 +86,11 @@ export function ViewProfile() {
     return (
       <div className="view-profile">
         <div className="view-profile-not-found">
-          <h1 className="view-profile-not-found-title">
-            プロフィールが見つかりません
-          </h1>
+          <h1 className="view-profile-not-found-title">プロフィールが見つかりません</h1>
           <p className="view-profile-not-found-message">
             指定されたプロフィールは存在しないか、削除された可能性があります。
           </p>
-          <button
-            className="view-profile-not-found-button"
-            onClick={() => navigate("/")}
-          >
+          <button className="view-profile-not-found-button" onClick={() => navigate('/')}>
             ホームに戻る
           </button>
         </div>

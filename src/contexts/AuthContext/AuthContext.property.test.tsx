@@ -2,14 +2,13 @@
  * AuthContextのプロパティベーステスト
  */
 
-import { describe, it, vi, beforeEach } from "vitest";
-import * as fc from "fast-check";
-import { renderHook, waitFor } from "@testing-library/react";
-import { AuthProvider, useAuth } from "./AuthContext";
-import type { ReactNode } from "react";
+import { describe, it, vi, beforeEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { AuthProvider, useAuth } from './AuthContext';
+import type { ReactNode } from 'react';
 
 // authServiceをモック
-vi.mock("../../services/authService", () => ({
+vi.mock('../../services/authService', () => ({
   signUp: vi.fn(),
   signIn: vi.fn(),
   signOut: vi.fn(),
@@ -18,7 +17,7 @@ vi.mock("../../services/authService", () => ({
 }));
 
 // Supabaseクライアントをモック
-vi.mock("../../lib/supabase", () => ({
+vi.mock('../../lib/supabase', () => ({
   supabase: {
     auth: {
       onAuthStateChange: vi.fn(() => ({
@@ -33,9 +32,9 @@ vi.mock("../../lib/supabase", () => ({
 }));
 
 // モックされたauthServiceをインポート
-import * as authService from "../../services/authService";
+import * as authService from '../../services/authService';
 
-describe("AuthContext - Property Based Tests", () => {
+describe('AuthContext - Property Based Tests', () => {
   beforeEach(() => {
     // 各テストの前にモックをリセット
     vi.clearAllMocks();
@@ -55,18 +54,18 @@ describe("AuthContext - Property Based Tests", () => {
    * 注: このプロパティは、AuthContextが初期化時にgetSessionを呼び出し、
    * 返されたセッション情報を正しく状態に設定することをテストします。
    */
-  describe("Property 9: セッションの永続性", () => {
-    it("getSessionが呼び出され、セッション情報が復元される", async () => {
+  describe('Property 9: セッションの永続性', () => {
+    it('getSessionが呼び出され、セッション情報が復元される', async () => {
       // 固定のセッション情報でテスト
       const mockSession = {
-        access_token: "test-access-token",
-        refresh_token: "test-refresh-token",
+        access_token: 'test-access-token',
+        refresh_token: 'test-refresh-token',
         expires_in: 3600,
         expires_at: Date.now() + 3600 * 1000,
-        token_type: "bearer",
+        token_type: 'bearer',
         user: {
-          id: "user-123",
-          email: "test@example.com",
+          id: 'user-123',
+          email: 'test@example.com',
           created_at: new Date().toISOString(),
         },
       };

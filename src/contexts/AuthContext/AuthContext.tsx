@@ -3,10 +3,10 @@
  * 認証状態の管理を担当するContext
  */
 
-import React, { createContext, useContext, useReducer, useEffect } from "react";
-import type { User, Session } from "../../types/auth";
-import * as authService from "../../services/authService";
-import { supabase } from "../../lib/supabase";
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import type { User, Session } from '../../types/auth';
+import * as authService from '../../services/authService';
+import { supabase } from '../../lib/supabase';
 
 /**
  * 認証状態の型
@@ -26,10 +26,10 @@ interface AuthState {
  * 認証アクションの型
  */
 type AuthAction =
-  | { type: "SET_USER"; payload: { user: User | null; session: Session | null } }
-  | { type: "SET_LOADING"; payload: boolean }
-  | { type: "SET_ERROR"; payload: string | null }
-  | { type: "CLEAR_ERROR" };
+  | { type: 'SET_USER'; payload: { user: User | null; session: Session | null } }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'CLEAR_ERROR' };
 
 /**
  * 認証コンテキストの値の型
@@ -50,7 +50,7 @@ interface AuthContextValue extends AuthState {
  */
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
-    case "SET_USER":
+    case 'SET_USER':
       return {
         ...state,
         user: action.payload.user,
@@ -58,18 +58,18 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
         loading: false,
         error: null,
       };
-    case "SET_LOADING":
+    case 'SET_LOADING':
       return {
         ...state,
         loading: action.payload,
       };
-    case "SET_ERROR":
+    case 'SET_ERROR':
       return {
         ...state,
         error: action.payload,
         loading: false,
       };
-    case "CLEAR_ERROR":
+    case 'CLEAR_ERROR':
       return {
         ...state,
         error: null,
@@ -92,6 +92,7 @@ const initialState: AuthState = {
 /**
  * 認証コンテキスト
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 /**
@@ -116,19 +117,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const session = await authService.getSession();
         if (session) {
           dispatch({
-            type: "SET_USER",
+            type: 'SET_USER',
             payload: { user: session.user, session },
           });
         } else {
           dispatch({
-            type: "SET_USER",
+            type: 'SET_USER',
             payload: { user: null, session: null },
           });
         }
       } catch (error) {
-        console.error("認証の初期化に失敗しました:", error);
+        console.error('認証の初期化に失敗しました:', error);
         dispatch({
-          type: "SET_USER",
+          type: 'SET_USER',
           payload: { user: null, session: null },
         });
       }
@@ -142,11 +143,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
         dispatch({
-          type: "SET_USER",
+          type: 'SET_USER',
           payload: {
             user: {
               id: session.user.id,
-              email: session.user.email || "",
+              email: session.user.email || '',
               created_at: session.user.created_at,
             },
             session: {
@@ -157,7 +158,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               token_type: session.token_type,
               user: {
                 id: session.user.id,
-                email: session.user.email || "",
+                email: session.user.email || '',
                 created_at: session.user.created_at,
               },
             },
@@ -165,7 +166,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
       } else {
         dispatch({
-          type: "SET_USER",
+          type: 'SET_USER',
           payload: { user: null, session: null },
         });
       }
@@ -182,20 +183,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const signUp = async (email: string, password: string) => {
     try {
-      dispatch({ type: "SET_LOADING", payload: true });
-      dispatch({ type: "CLEAR_ERROR" });
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
 
       const user = await authService.signUp(email, password);
       const session = await authService.getSession();
 
       dispatch({
-        type: "SET_USER",
+        type: 'SET_USER',
         payload: { user, session },
       });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "アカウント登録に失敗しました";
-      dispatch({ type: "SET_ERROR", payload: errorMessage });
+      const errorMessage = error instanceof Error ? error.message : 'アカウント登録に失敗しました';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
   };
@@ -205,19 +205,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const signIn = async (email: string, password: string) => {
     try {
-      dispatch({ type: "SET_LOADING", payload: true });
-      dispatch({ type: "CLEAR_ERROR" });
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
 
       const user = await authService.signIn(email, password);
       const session = await authService.getSession();
 
       dispatch({
-        type: "SET_USER",
+        type: 'SET_USER',
         payload: { user, session },
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "ログインに失敗しました";
-      dispatch({ type: "SET_ERROR", payload: errorMessage });
+      const errorMessage = error instanceof Error ? error.message : 'ログインに失敗しました';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
   };
@@ -227,19 +227,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const signOut = async () => {
     try {
-      dispatch({ type: "SET_LOADING", payload: true });
-      dispatch({ type: "CLEAR_ERROR" });
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
 
       await authService.signOut();
 
       dispatch({
-        type: "SET_USER",
+        type: 'SET_USER',
         payload: { user: null, session: null },
       });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "ログアウトに失敗しました";
-      dispatch({ type: "SET_ERROR", payload: errorMessage });
+      const errorMessage = error instanceof Error ? error.message : 'ログアウトに失敗しました';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
   };
@@ -248,7 +247,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * エラークリア
    */
   const clearError = () => {
-    dispatch({ type: "CLEAR_ERROR" });
+    dispatch({ type: 'CLEAR_ERROR' });
   };
 
   const value: AuthContextValue = {
@@ -265,10 +264,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 /**
  * 認証コンテキストを使用するカスタムフック
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuthはAuthProvider内で使用する必要があります");
+    throw new Error('useAuthはAuthProvider内で使用する必要があります');
   }
   return context;
 }

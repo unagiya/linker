@@ -2,7 +2,7 @@
  * ErrorMessageコンポーネント
  */
 
-import "./ErrorMessage.css";
+import './ErrorMessage.css';
 
 interface ErrorMessageProps {
   /** エラーメッセージ */
@@ -15,12 +15,7 @@ export function ErrorMessage({ message, onClose }: ErrorMessageProps) {
   return (
     <div className="error-message" role="alert">
       <div className="error-message-content">
-        <svg
-          className="error-message-icon"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
+        <svg className="error-message-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"

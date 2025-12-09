@@ -3,9 +3,9 @@
  * 404エラーページ
  */
 
-import { Link } from "react-router-dom";
-import { Button } from "../../components/common";
-import "./NotFound.css";
+import { Link } from 'react-router-dom';
+import { Button } from '../../components/common';
+import './NotFound.css';
 
 export function NotFound() {
   return (

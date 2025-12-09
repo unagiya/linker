@@ -2,4 +2,4 @@
  * ProfileFormコンポーネントのエクスポート
  */
 
-export { ProfileForm } from "./ProfileForm";
+export { ProfileForm } from './ProfileForm';

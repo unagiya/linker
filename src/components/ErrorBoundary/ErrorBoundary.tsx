@@ -3,8 +3,8 @@
  * グローバルエラーバウンダリ
  */
 
-import { Component, ReactNode } from "react";
-import "./ErrorBoundary.css";
+import { Component, ReactNode } from 'react';
+import './ErrorBoundary.css';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -15,10 +15,7 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-export class ErrorBoundary extends Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
-> {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -35,7 +32,7 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
   handleReset = (): void => {
@@ -43,7 +40,7 @@ export class ErrorBoundary extends Component<
       hasError: false,
       error: null,
     });
-    window.location.href = "/";
+    window.location.href = '/';
   };
 
   render(): ReactNode {
@@ -58,15 +55,10 @@ export class ErrorBoundary extends Component<
             {this.state.error && (
               <details className="error-boundary-details">
                 <summary>エラー詳細</summary>
-                <pre className="error-boundary-error">
-                  {this.state.error.toString()}
-                </pre>
+                <pre className="error-boundary-error">{this.state.error.toString()}</pre>
               </details>
             )}
-            <button
-              className="error-boundary-button"
-              onClick={this.handleReset}
-            >
+            <button className="error-boundary-button" onClick={this.handleReset}>
               ホームに戻る
             </button>
           </div>

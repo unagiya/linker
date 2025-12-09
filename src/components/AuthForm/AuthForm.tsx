@@ -3,17 +3,17 @@
  * アカウント登録・ログインフォーム
  */
 
-import { useState } from "react";
-import type { FormEvent } from "react";
-import { Input } from "../common/Input";
-import { Button } from "../common/Button";
-import { ErrorMessage } from "../common/ErrorMessage";
-import { validateSignUp, validateSignIn } from "../../utils/validation";
-import "./AuthForm.css";
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import { Input } from '../common/Input';
+import { Button } from '../common/Button';
+import { ErrorMessage } from '../common/ErrorMessage';
+import { validateSignUp, validateSignIn } from '../../utils/validation';
+import './AuthForm.css';
 
 interface AuthFormProps {
   /** モード（登録またはログイン） */
-  mode: "signup" | "signin";
+  mode: 'signup' | 'signin';
   /** 送信ハンドラ */
   onSubmit: (email: string, password: string) => Promise<void>;
   /** モード切り替えハンドラ */
@@ -34,20 +34,20 @@ export function AuthForm({
   error = null,
   noValidate = false,
 }: AuthFormProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [validationErrors, setValidationErrors] = useState<{
     email?: string[];
     password?: string[];
   }>({});
 
-  const isSignUp = mode === "signup";
-  const title = isSignUp ? "アカウント登録" : "ログイン";
-  const submitButtonText = isSignUp ? "登録" : "ログイン";
+  const isSignUp = mode === 'signup';
+  const title = isSignUp ? 'アカウント登録' : 'ログイン';
+  const submitButtonText = isSignUp ? '登録' : 'ログイン';
   const modeChangeText = isSignUp
-    ? "既にアカウントをお持ちですか？"
-    : "アカウントをお持ちでないですか？";
-  const modeChangeButtonText = isSignUp ? "ログイン" : "登録";
+    ? '既にアカウントをお持ちですか？'
+    : 'アカウントをお持ちでないですか？';
+  const modeChangeButtonText = isSignUp ? 'ログイン' : '登録';
 
   /**
    * フォーム送信ハンドラ
@@ -71,7 +71,7 @@ export function AuthForm({
     // 送信
     try {
       await onSubmit(email, password);
-    } catch (error) {
+    } catch {
       // エラーは親コンポーネントで処理される
     }
   };
@@ -135,11 +135,11 @@ export function AuthForm({
             error={validationErrors.password?.[0]}
             required
             disabled={loading}
-            autoComplete={isSignUp ? "new-password" : "current-password"}
+            autoComplete={isSignUp ? 'new-password' : 'current-password'}
           />
 
           <Button type="submit" fullWidth disabled={loading}>
-            {loading ? "処理中..." : submitButtonText}
+            {loading ? '処理中...' : submitButtonText}
           </Button>
         </form>
 

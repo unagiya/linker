@@ -3,8 +3,8 @@
  * 確認ダイアログ
  */
 
-import { Button } from "./Button";
-import "./ConfirmDialog.css";
+import { Button } from './Button';
+import './ConfirmDialog.css';
 
 interface ConfirmDialogProps {
   /** ダイアログを表示するか */
@@ -18,7 +18,7 @@ interface ConfirmDialogProps {
   /** キャンセルボタンのテキスト */
   cancelText?: string;
   /** 確認ボタンのバリアント */
-  confirmVariant?: "primary" | "secondary" | "danger";
+  confirmVariant?: 'primary' | 'secondary' | 'danger';
   /** 確認ハンドラ */
   onConfirm: () => void;
   /** キャンセルハンドラ */
@@ -31,9 +31,9 @@ export function ConfirmDialog({
   isOpen,
   title,
   message,
-  confirmText = "確認",
-  cancelText = "キャンセル",
-  confirmVariant = "primary",
+  confirmText = '確認',
+  cancelText = 'キャンセル',
+  confirmVariant = 'primary',
   onConfirm,
   onCancel,
   isProcessing = false,
@@ -56,19 +56,11 @@ export function ConfirmDialog({
           {message}
         </p>
         <div className="confirm-dialog-actions">
-          <Button
-            variant="secondary"
-            onClick={onCancel}
-            disabled={isProcessing}
-          >
+          <Button variant="secondary" onClick={onCancel} disabled={isProcessing}>
             {cancelText}
           </Button>
-          <Button
-            variant={confirmVariant}
-            onClick={onConfirm}
-            disabled={isProcessing}
-          >
-            {isProcessing ? "処理中..." : confirmText}
+          <Button variant={confirmVariant} onClick={onConfirm} disabled={isProcessing}>
+            {isProcessing ? '処理中...' : confirmText}
           </Button>
         </div>
       </div>

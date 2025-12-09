@@ -3,10 +3,10 @@
  * ホームページ
  */
 
-import { Link } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
-import { Button } from "../../components/common";
-import "./Home.css";
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { Button } from '../../components/common';
+import './Home.css';
 
 export function Home() {
   const { user } = useAuth();
@@ -16,9 +16,7 @@ export function Home() {
       <div className="home-container">
         <div className="home-hero">
           <h1 className="home-title">Linker</h1>
-          <p className="home-subtitle">
-            エンジニアのためのプロフィール共有プラットフォーム
-          </p>
+          <p className="home-subtitle">エンジニアのためのプロフィール共有プラットフォーム</p>
           <p className="home-description">
             あなたのスキルや経験を共有して、他のエンジニアとつながりましょう。
             名刺のように簡単にプロフィールを作成・共有できます。

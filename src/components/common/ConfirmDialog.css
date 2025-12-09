@@ -16,7 +16,8 @@
 .confirm-dialog {
   background-color: #ffffff;
   border-radius: 0.75rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04);
   padding: 1.5rem;
   max-width: 400px;

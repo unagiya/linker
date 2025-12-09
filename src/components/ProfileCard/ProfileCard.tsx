@@ -3,10 +3,10 @@
  * プロフィール情報を名刺風に表示するコンポーネント
  */
 
-import type { Profile } from "../../types/profile";
-import { PredefinedService } from "../../types/profile";
-import { Button } from "../common/Button";
-import "./ProfileCard.css";
+import type { Profile } from '../../types/profile';
+import { PredefinedService } from '../../types/profile';
+import { Button } from '../common/Button';
+import './ProfileCard.css';
 
 interface ProfileCardProps {
   /** 表示するプロフィール */
@@ -27,13 +27,13 @@ interface ProfileCardProps {
 function getSocialIcon(service: string): string {
   switch (service) {
     case PredefinedService.TWITTER:
-      return "𝕏"; // Twitter/X のアイコン
+      return '𝕏'; // Twitter/X のアイコン
     case PredefinedService.GITHUB:
-      return "⚙"; // GitHub のアイコン
+      return '⚙'; // GitHub のアイコン
     case PredefinedService.FACEBOOK:
-      return "f"; // Facebook のアイコン
+      return 'f'; // Facebook のアイコン
     default:
-      return "🔗"; // その他のリンク
+      return '🔗'; // その他のリンク
   }
 }
 
@@ -43,11 +43,11 @@ function getSocialIcon(service: string): string {
 function getSocialLabel(service: string): string {
   switch (service) {
     case PredefinedService.TWITTER:
-      return "Twitter";
+      return 'Twitter';
     case PredefinedService.GITHUB:
-      return "GitHub";
+      return 'GitHub';
     case PredefinedService.FACEBOOK:
-      return "Facebook";
+      return 'Facebook';
     default:
       return service;
   }
@@ -77,15 +77,12 @@ export function ProfileCard({
         </div>
       )}
 
-      {profile.yearsOfExperience !== undefined &&
-        profile.yearsOfExperience !== null && (
-          <div className="profile-card-section">
-            <h2 className="profile-card-section-title">経験年数</h2>
-            <p className="profile-card-experience">
-              {profile.yearsOfExperience}年
-            </p>
-          </div>
-        )}
+      {profile.yearsOfExperience !== undefined && profile.yearsOfExperience !== null && (
+        <div className="profile-card-section">
+          <h2 className="profile-card-section-title">経験年数</h2>
+          <p className="profile-card-experience">{profile.yearsOfExperience}年</p>
+        </div>
+      )}
 
       {profile.skills.length > 0 && (
         <div className="profile-card-section">
@@ -113,12 +110,8 @@ export function ProfileCard({
                 className="profile-card-social-link"
                 aria-label={`${getSocialLabel(link.service)}へのリンク`}
               >
-                <span className="profile-card-social-icon">
-                  {getSocialIcon(link.service)}
-                </span>
-                <span className="profile-card-social-label">
-                  {getSocialLabel(link.service)}
-                </span>
+                <span className="profile-card-social-icon">{getSocialIcon(link.service)}</span>
+                <span className="profile-card-social-label">{getSocialLabel(link.service)}</span>
               </a>
             ))}
           </div>

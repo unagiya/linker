@@ -3,8 +3,8 @@
  * Supabase Authを使用した認証機能を提供
  */
 
-import { supabase } from "../lib/supabase";
-import type { User, Session } from "../types/auth";
+import { supabase } from '../lib/supabase';
+import type { User, Session } from '../types/auth';
 
 /**
  * アカウント登録
@@ -24,13 +24,13 @@ export async function signUp(email: string, password: string): Promise<User> {
   }
 
   if (!data.user) {
-    throw new Error("ユーザーの作成に失敗しました");
+    throw new Error('ユーザーの作成に失敗しました');
   }
 
   // Supabaseのユーザー型をアプリケーションのUser型に変換
   return {
     id: data.user.id,
-    email: data.user.email || "",
+    email: data.user.email || '',
     created_at: data.user.created_at,
   };
 }
@@ -53,13 +53,13 @@ export async function signIn(email: string, password: string): Promise<User> {
   }
 
   if (!data.user) {
-    throw new Error("ログインに失敗しました");
+    throw new Error('ログインに失敗しました');
   }
 
   // Supabaseのユーザー型をアプリケーションのUser型に変換
   return {
     id: data.user.id,
-    email: data.user.email || "",
+    email: data.user.email || '',
     created_at: data.user.created_at,
   };
 }
@@ -100,7 +100,7 @@ export async function getSession(): Promise<Session | null> {
     token_type: data.session.token_type,
     user: {
       id: data.session.user.id,
-      email: data.session.user.email || "",
+      email: data.session.user.email || '',
       created_at: data.session.user.created_at,
     },
   };
@@ -124,7 +124,7 @@ export async function getCurrentUser(): Promise<User | null> {
   // Supabaseのユーザー型をアプリケーションのUser型に変換
   return {
     id: data.user.id,
-    email: data.user.email || "",
+    email: data.user.email || '',
     created_at: data.user.created_at,
   };
 }

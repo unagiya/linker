@@ -2,19 +2,16 @@
  * LoadingSpinnerコンポーネント
  */
 
-import "./LoadingSpinner.css";
+import './LoadingSpinner.css';
 
 interface LoadingSpinnerProps {
   /** サイズ */
-  size?: "small" | "medium" | "large";
+  size?: 'small' | 'medium' | 'large';
   /** メッセージ */
   message?: string;
 }
 
-export function LoadingSpinner({
-  size = "medium",
-  message,
-}: LoadingSpinnerProps) {
+export function LoadingSpinner({ size = 'medium', message }: LoadingSpinnerProps) {
   return (
     <div className="loading-spinner-container">
       <div className={`loading-spinner loading-spinner--${size}`} role="status">

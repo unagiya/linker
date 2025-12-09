@@ -2,9 +2,9 @@
  * アカウント登録ページ
  */
 
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext/AuthContext";
-import { AuthForm } from "../../components/AuthForm/AuthForm";
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext/AuthContext';
+import { AuthForm } from '../../components/AuthForm/AuthForm';
 
 export function SignUp() {
   const navigate = useNavigate();
@@ -17,10 +17,10 @@ export function SignUp() {
     try {
       await signUp(email, password);
       // 登録成功時、プロフィール作成ページにリダイレクト
-      navigate("/create");
+      navigate('/create');
     } catch (error) {
       // エラーはAuthContextで管理されるため、ここでは何もしない
-      console.error("アカウント登録エラー:", error);
+      console.error('アカウント登録エラー:', error);
     }
   };
 
@@ -28,7 +28,7 @@ export function SignUp() {
    * ログインページへ遷移
    */
   const handleModeChange = () => {
-    navigate("/signin");
+    navigate('/signin');
   };
 
   return (

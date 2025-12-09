@@ -3,9 +3,9 @@
  * 認証が必要なページを保護するコンポーネント
  */
 
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext/AuthContext";
-import { LoadingSpinner } from "../common/LoadingSpinner";
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext/AuthContext';
+import { LoadingSpinner } from '../common/LoadingSpinner';
 
 interface ProtectedRouteProps {
   /** 保護するコンポーネント */
@@ -25,10 +25,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return (
       <div
         style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
         }}
       >
         <LoadingSpinner />

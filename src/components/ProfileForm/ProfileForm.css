@@ -89,7 +89,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
 .profile-form-skill-tag-remove:hover:not(:disabled) {
@@ -136,7 +138,9 @@
   font-size: 0.875rem;
   color: #1f2937;
   background-color: white;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .profile-form-select:focus {

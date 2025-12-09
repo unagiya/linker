@@ -2,4 +2,4 @@
  * ViewProfileのエクスポート
  */
 
-export * from "./ViewProfile";
+export * from './ViewProfile';

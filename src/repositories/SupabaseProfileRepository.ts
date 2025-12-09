@@ -3,10 +3,10 @@
  * Supabaseデータベースを使用したProfileRepositoryの実装
  */
 
-import { supabase } from "../lib/supabase";
-import { Profile } from "../types/profile";
-import { ProfileRow, ProfileInsert, ProfileUpdate } from "../types/database";
-import { ProfileRepository } from "./ProfileRepository";
+import { supabase } from '../lib/supabase';
+import { Profile } from '../types/profile';
+import { ProfileRow, ProfileInsert, ProfileUpdate } from '../types/database';
+import { ProfileRepository } from './ProfileRepository';
 
 /**
  * Supabaseデータベースを使用したProfileRepositoryの実装
@@ -32,10 +32,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
         updated_at: profile.updatedAt,
       };
 
-      const { error } = await supabase
-        .from("profiles")
-        .update(updateData)
-        .eq("id", profile.id);
+      const { error } = await supabase.from('profiles').update(updateData).eq('id', profile.id);
 
       if (error) {
         throw new Error(`プロフィールの更新に失敗しました: ${error.message}`);
@@ -55,7 +52,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
         updated_at: profile.updatedAt,
       };
 
-      const { error } = await supabase.from("profiles").insert(insertData);
+      const { error } = await supabase.from('profiles').insert(insertData);
 
       if (error) {
         throw new Error(`プロフィールの作成に失敗しました: ${error.message}`);
@@ -67,15 +64,11 @@ export class SupabaseProfileRepository implements ProfileRepository {
    * IDでプロフィールを検索する
    */
   async findById(id: string): Promise<Profile | null> {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
 
     if (error) {
       // PGRST116は「行が見つからない」エラー
-      if (error.code === "PGRST116") {
+      if (error.code === 'PGRST116') {
         return null;
       }
       throw new Error(`プロフィールの取得に失敗しました: ${error.message}`);
@@ -89,14 +82,14 @@ export class SupabaseProfileRepository implements ProfileRepository {
    */
   async findByUserId(userId: string): Promise<Profile | null> {
     const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", userId)
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
       .single();
 
     if (error) {
       // PGRST116は「行が見つからない」エラー
-      if (error.code === "PGRST116") {
+      if (error.code === 'PGRST116') {
         return null;
       }
       throw new Error(`プロフィールの取得に失敗しました: ${error.message}`);
@@ -110,9 +103,9 @@ export class SupabaseProfileRepository implements ProfileRepository {
    */
   async findAll(): Promise<Profile[]> {
     const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) {
       throw new Error(`プロフィール一覧の取得に失敗しました: ${error.message}`);
@@ -125,7 +118,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
    * プロフィールを削除する
    */
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.from("profiles").delete().eq("id", id);
+    const { error } = await supabase.from('profiles').delete().eq('id', id);
 
     if (error) {
       throw new Error(`プロフィールの削除に失敗しました: ${error.message}`);
@@ -142,7 +135,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   /**
    * データベースの行データをProfileオブジェクトにマッピングする
-   * 
+   *
    * @param data - データベースの行データ
    * @returns Profileオブジェクト
    */
@@ -154,10 +147,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
       jobTitle: data.job_title,
       bio: data.bio || undefined,
       skills: data.skills || [],
-      yearsOfExperience:
-        data.years_of_experience !== null
-          ? data.years_of_experience
-          : undefined,
+      yearsOfExperience: data.years_of_experience !== null ? data.years_of_experience : undefined,
       socialLinks: data.social_links || [],
       createdAt: data.created_at,
       updatedAt: data.updated_at,

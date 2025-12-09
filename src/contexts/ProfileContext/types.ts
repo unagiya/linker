@@ -2,7 +2,7 @@
  * ProfileContext関連の型定義
  */
 
-import type { Profile, ProfileFormData } from "../../types";
+import type { Profile, ProfileFormData } from '../../types';
 
 /**
  * プロフィール状態の型
@@ -20,10 +20,10 @@ export interface ProfileState {
  * プロフィールアクションの型
  */
 export type ProfileAction =
-  | { type: "SET_LOADING"; payload: boolean }
-  | { type: "SET_PROFILE"; payload: Profile | null }
-  | { type: "SET_ERROR"; payload: string | null }
-  | { type: "CLEAR_ERROR" };
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_PROFILE'; payload: Profile | null }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'CLEAR_ERROR' };
 
 /**
  * ProfileContextの値の型

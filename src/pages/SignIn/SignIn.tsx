@@ -2,9 +2,9 @@
  * ログインページ
  */
 
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext/AuthContext";
-import { AuthForm } from "../../components/AuthForm/AuthForm";
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext/AuthContext';
+import { AuthForm } from '../../components/AuthForm/AuthForm';
 
 export function SignIn() {
   const navigate = useNavigate();
@@ -17,10 +17,10 @@ export function SignIn() {
     try {
       await signIn(email, password);
       // ログイン成功時、ホームページにリダイレクト
-      navigate("/");
+      navigate('/');
     } catch (error) {
       // エラーはAuthContextで管理されるため、ここでは何もしない
-      console.error("ログインエラー:", error);
+      console.error('ログインエラー:', error);
     }
   };
 
@@ -28,7 +28,7 @@ export function SignIn() {
    * 登録ページへ遷移
    */
   const handleModeChange = () => {
-    navigate("/signup");
+    navigate('/signup');
   };
 
   return (

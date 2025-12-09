@@ -3,7 +3,7 @@
  * データベーススキーマに対応する型を定義
  */
 
-import { SocialLink } from "./profile";
+import { SocialLink } from './profile';
 
 /**
  * profilesテーブルの行型

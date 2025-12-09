@@ -2,4 +2,4 @@
  * CreateProfileページのエクスポート
  */
 
-export { CreateProfile } from "./CreateProfile";
+export { CreateProfile } from './CreateProfile';

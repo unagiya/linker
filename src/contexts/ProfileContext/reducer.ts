@@ -2,7 +2,7 @@
  * ProfileContextのReducer
  */
 
-import type { ProfileState, ProfileAction } from "./types";
+import type { ProfileState, ProfileAction } from './types';
 
 /**
  * 初期状態
@@ -16,18 +16,15 @@ export const initialState: ProfileState = {
 /**
  * プロフィール状態のReducer
  */
-export function profileReducer(
-  state: ProfileState,
-  action: ProfileAction
-): ProfileState {
+export function profileReducer(state: ProfileState, action: ProfileAction): ProfileState {
   switch (action.type) {
-    case "SET_LOADING":
+    case 'SET_LOADING':
       return {
         ...state,
         loading: action.payload,
       };
 
-    case "SET_PROFILE":
+    case 'SET_PROFILE':
       return {
         ...state,
         profile: action.payload,
@@ -35,14 +32,14 @@ export function profileReducer(
         error: null,
       };
 
-    case "SET_ERROR":
+    case 'SET_ERROR':
       return {
         ...state,
         error: action.payload,
         loading: false,
       };
 
-    case "CLEAR_ERROR":
+    case 'CLEAR_ERROR':
       return {
         ...state,
         error: null,

@@ -2,16 +2,16 @@
  * ViewProfileページのプロパティベーステスト
  */
 
-import { describe, it, beforeEach, afterEach } from "vitest";
-import * as fc from "fast-check";
-import { render, screen as _screen, waitFor, cleanup } from "@testing-library/react";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "../../contexts/AuthContext";
-import { ProfileProvider } from "../../contexts/ProfileContext";
-import { LocalStorageRepository } from "../../repositories";
-import { ViewProfile } from "./ViewProfile";
-import type { Profile } from "../../types";
-import type { ReactNode } from "react";
+import { describe, it, beforeEach, afterEach } from 'vitest';
+import * as fc from 'fast-check';
+import { render, screen as _screen, waitFor, cleanup } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from '../../contexts/AuthContext';
+import { ProfileProvider } from '../../contexts/ProfileContext';
+import { LocalStorageRepository } from '../../repositories';
+import { ViewProfile } from './ViewProfile';
+import type { Profile } from '../../types';
+import type { ReactNode } from 'react';
 
 /**
  * Feature: engineer-profile-platform, Property 11: プロフィールURLアクセス
@@ -20,7 +20,7 @@ import type { ReactNode } from "react";
  * 任意の保存されているプロフィールIDに対して、そのIDを含むURLにアクセスすると、
  * 対応するプロフィールの詳細ページが表示される
  */
-describe.skip("Property 11: プロフィールURLアクセス", () => {
+describe.skip('Property 11: プロフィールURLアクセス', () => {
   let repository: LocalStorageRepository;
 
   beforeEach(async () => {
@@ -35,8 +35,8 @@ describe.skip("Property 11: プロフィールURLアクセス", () => {
   // 有効な日付範囲を持つ日付ジェネレーター
   const validDateArbitrary = fc
     .integer({
-      min: new Date("2000-01-01").getTime(),
-      max: new Date("2099-12-31").getTime(),
+      min: new Date('2000-01-01').getTime(),
+      max: new Date('2099-12-31').getTime(),
     })
     .map((timestamp) => new Date(timestamp).toISOString());
 
@@ -44,18 +44,14 @@ describe.skip("Property 11: プロフィールURLアクセス", () => {
   const socialLinkArbitrary = fc.record({
     id: fc.uuid(),
     service: fc.string({ minLength: 1, maxLength: 50 }),
-    url: fc.webUrl({ validSchemes: ["http", "https"] }),
+    url: fc.webUrl({ validSchemes: ['http', 'https'] }),
   });
 
   // 完全なプロフィールのジェネレーター
   const profileArbitrary = fc.record({
     id: fc.uuid(),
-    name: fc
-      .string({ minLength: 1, maxLength: 100 })
-      .filter((s) => s.trim().length > 0),
-    jobTitle: fc
-      .string({ minLength: 1, maxLength: 100 })
-      .filter((s) => s.trim().length > 0),
+    name: fc.string({ minLength: 1, maxLength: 100 }).filter((s) => s.trim().length > 0),
+    jobTitle: fc.string({ minLength: 1, maxLength: 100 }).filter((s) => s.trim().length > 0),
     bio: fc.option(fc.string({ minLength: 1, maxLength: 500 }), {
       nil: undefined,
     }),
@@ -70,7 +66,7 @@ describe.skip("Property 11: プロフィールURLアクセス", () => {
     updatedAt: validDateArbitrary,
   }) as fc.Arbitrary<Profile>;
 
-  it("保存されているプロフィールIDを含むURLにアクセスすると、対応するプロフィールが表示される", async () => {
+  it('保存されているプロフィールIDを含むURLにアクセスすると、対応するプロフィールが表示される', async () => {
     await fc.assert(
       fc.asyncProperty(profileArbitrary, async (profile) => {
         // 各反復の前にクリア
@@ -103,7 +99,7 @@ describe.skip("Property 11: プロフィールURLアクセス", () => {
             () => {
               // 名前が表示される
               if (!container.textContent?.includes(profile.name)) {
-                throw new Error("名前が表示されていません");
+                throw new Error('名前が表示されていません');
               }
             },
             { timeout: 3000 }
@@ -142,7 +138,7 @@ describe.skip("Property 11: プロフィールURLアクセス", () => {
     );
   });
 
-  it("存在しないプロフィールIDにアクセスすると、404メッセージが表示される", async () => {
+  it('存在しないプロフィールIDにアクセスすると、404メッセージが表示される', async () => {
     await fc.assert(
       fc.asyncProperty(fc.uuid(), async (nonExistentId) => {
         // 各反復の前にクリアとクリーンアップ
@@ -170,8 +166,8 @@ describe.skip("Property 11: プロフィールURLアクセス", () => {
           // 404メッセージが表示されるまで待機
           await waitFor(
             () => {
-              if (!container.textContent?.includes("プロフィールが見つかりません")) {
-                throw new Error("404メッセージが表示されていません");
+              if (!container.textContent?.includes('プロフィールが見つかりません')) {
+                throw new Error('404メッセージが表示されていません');
               }
             },
             { timeout: 3000 }
@@ -186,7 +182,7 @@ describe.skip("Property 11: プロフィールURLアクセス", () => {
     );
   });
 
-  it("複数のプロフィールが保存されている場合、正しいプロフィールが表示される", async () => {
+  it('複数のプロフィールが保存されている場合、正しいプロフィールが表示される', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(profileArbitrary, { minLength: 2, maxLength: 5 }),
@@ -225,24 +221,21 @@ describe.skip("Property 11: プロフィールURLアクセス", () => {
             await waitFor(
               () => {
                 if (!container.textContent?.includes(targetProfile.name)) {
-                  throw new Error("ターゲットプロフィールが表示されていません");
+                  throw new Error('ターゲットプロフィールが表示されていません');
                 }
               },
               { timeout: 3000 }
             );
 
             // ターゲットプロフィールの職種が表示される
-            if (!container.textContent?.includes(targetProfile.jobTitle))
-              return false;
+            if (!container.textContent?.includes(targetProfile.jobTitle)) return false;
 
             // 他のプロフィールの名前が表示されていないことを確認
             for (const otherProfile of profiles) {
               if (otherProfile.id !== targetProfile.id) {
                 // 他のプロフィールの名前が表示されていないか確認
                 // ただし、名前が部分的に一致する可能性があるため、完全一致で確認
-                const nameElements = container.querySelectorAll(
-                  ".profile-card-name"
-                );
+                const nameElements = container.querySelectorAll('.profile-card-name');
                 const hasOtherName = Array.from(nameElements).some(
                   (el) => el.textContent === otherProfile.name
                 );

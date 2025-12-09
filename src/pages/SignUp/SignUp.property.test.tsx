@@ -4,16 +4,16 @@
  * 検証: 要件 1.5
  */
 
-import { describe, it, expect, vi } from "vitest";
-import * as fc from "fast-check";
-import * as authService from "../../services/authService";
+import { describe, it, expect, vi } from 'vitest';
+import * as fc from 'fast-check';
+import * as authService from '../../services/authService';
 
 // authServiceのモック
-vi.mock("../../services/authService");
+vi.mock('../../services/authService');
 
-describe("SignUp - Property Based Tests", () => {
-  describe("プロパティ4: アカウント作成後の自動ログインとリダイレクト", () => {
-    it("任意の有効なメールアドレスとパスワードに対して、signUpが成功するとユーザーオブジェクトが返される", async () => {
+describe('SignUp - Property Based Tests', () => {
+  describe('プロパティ4: アカウント作成後の自動ログインとリダイレクト', () => {
+    it('任意の有効なメールアドレスとパスワードに対して、signUpが成功するとユーザーオブジェクトが返される', async () => {
       await fc.assert(
         fc.asyncProperty(
           fc.emailAddress(),
@@ -43,7 +43,7 @@ describe("SignUp - Property Based Tests", () => {
       );
     });
 
-    it("任意の有効なアカウント作成に対して、getSessionが有効なセッションを返す", async () => {
+    it('任意の有効なアカウント作成に対して、getSessionが有効なセッションを返す', async () => {
       await fc.assert(
         fc.asyncProperty(
           fc.emailAddress(),
@@ -57,11 +57,11 @@ describe("SignUp - Property Based Tests", () => {
             };
 
             const mockSession = {
-              access_token: "mock-access-token",
-              refresh_token: "mock-refresh-token",
+              access_token: 'mock-access-token',
+              refresh_token: 'mock-refresh-token',
               expires_in: 3600,
               expires_at: Date.now() + 3600000,
-              token_type: "bearer" as const,
+              token_type: 'bearer' as const,
               user: mockUser,
             };
 
@@ -84,14 +84,14 @@ describe("SignUp - Property Based Tests", () => {
       );
     });
 
-    it("アカウント登録が失敗した場合、エラーがスローされる", async () => {
+    it('アカウント登録が失敗した場合、エラーがスローされる', async () => {
       await fc.assert(
         fc.asyncProperty(
           fc.emailAddress(),
           fc.string({ minLength: 6, maxLength: 50 }),
           async (email, password) => {
             // モックのセットアップ（エラーを返す）
-            const errorMessage = "アカウント登録に失敗しました";
+            const errorMessage = 'アカウント登録に失敗しました';
             vi.mocked(authService.signUp).mockRejectedValue(new Error(errorMessage));
 
             // signUpを呼び出してエラーを検証

@@ -3,16 +3,16 @@
  * プロフィールの作成・編集フォーム
  */
 
-import { useState, useEffect } from "react";
-import type { FormEvent } from "react";
-import { Input } from "../common/Input";
-import { TextArea } from "../common/TextArea";
-import { Button } from "../common/Button";
-import { ErrorMessage } from "../common/ErrorMessage";
-import { validateProfileForm } from "../../utils/validation";
-import { PredefinedService } from "../../types/profile";
-import type { ProfileFormData } from "../../types/profile";
-import "./ProfileForm.css";
+import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
+import { Input } from '../common/Input';
+import { TextArea } from '../common/TextArea';
+import { Button } from '../common/Button';
+import { ErrorMessage } from '../common/ErrorMessage';
+import { validateProfileForm } from '../../utils/validation';
+import { PredefinedService } from '../../types/profile';
+import type { ProfileFormData } from '../../types/profile';
+import './ProfileForm.css';
 
 interface ProfileFormProps {
   /** 初期値（編集時） */
@@ -35,31 +35,28 @@ export function ProfileForm({
   error = null,
 }: ProfileFormProps) {
   // フォームの状態
-  const [name, setName] = useState(initialData?.name || "");
-  const [jobTitle, setJobTitle] = useState(initialData?.jobTitle || "");
-  const [bio, setBio] = useState(initialData?.bio || "");
+  const [name, setName] = useState(initialData?.name || '');
+  const [jobTitle, setJobTitle] = useState(initialData?.jobTitle || '');
+  const [bio, setBio] = useState(initialData?.bio || '');
   const [skills, setSkills] = useState<string[]>(initialData?.skills || []);
-  const [skillInput, setSkillInput] = useState("");
-  const [yearsOfExperience, setYearsOfExperience] = useState(
-    initialData?.yearsOfExperience || ""
+  const [skillInput, setSkillInput] = useState('');
+  const [yearsOfExperience, setYearsOfExperience] = useState(initialData?.yearsOfExperience || '');
+  const [socialLinks, setSocialLinks] = useState<Array<{ service: string; url: string }>>(
+    initialData?.socialLinks || []
   );
-  const [socialLinks, setSocialLinks] = useState<
-    Array<{ service: string; url: string }>
-  >(initialData?.socialLinks || []);
 
   // バリデーションエラー
-  const [validationErrors, setValidationErrors] = useState<
-    Record<string, string[]>
-  >({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
   // 初期データが変更されたらフォームを更新
   useEffect(() => {
     if (initialData) {
-      setName(initialData.name || "");
-      setJobTitle(initialData.jobTitle || "");
-      setBio(initialData.bio || "");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setName(initialData.name || '');
+      setJobTitle(initialData.jobTitle || '');
+      setBio(initialData.bio || '');
       setSkills(initialData.skills || []);
-      setYearsOfExperience(initialData.yearsOfExperience || "");
+      setYearsOfExperience(initialData.yearsOfExperience || '');
       setSocialLinks(initialData.socialLinks || []);
     }
   }, [initialData]);
@@ -93,7 +90,7 @@ export function ProfileForm({
     // 送信
     try {
       await onSubmit(formData);
-    } catch (error) {
+    } catch {
       // エラーは親コンポーネントで処理される
     }
   };
@@ -107,12 +104,12 @@ export function ProfileForm({
       if (skills.length >= 20) {
         setValidationErrors((prev) => ({
           ...prev,
-          skills: ["スキルは20個まで登録できます"],
+          skills: ['スキルは20個まで登録できます'],
         }));
         return;
       }
       setSkills([...skills, trimmedSkill]);
-      setSkillInput("");
+      setSkillInput('');
       // エラーをクリア
       if (validationErrors.skills) {
         const newErrors = { ...validationErrors };
@@ -139,7 +136,7 @@ export function ProfileForm({
    * スキル入力でEnterキーが押されたときの処理
    */
   const handleSkillKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       e.preventDefault();
       handleAddSkill();
     }
@@ -152,11 +149,11 @@ export function ProfileForm({
     if (socialLinks.length >= 10) {
       setValidationErrors((prev) => ({
         ...prev,
-        socialLinks: ["SNSリンクは10個まで登録できます"],
+        socialLinks: ['SNSリンクは10個まで登録できます'],
       }));
       return;
     }
-    setSocialLinks([...socialLinks, { service: "", url: "" }]);
+    setSocialLinks([...socialLinks, { service: '', url: '' }]);
   };
 
   /**
@@ -205,7 +202,7 @@ export function ProfileForm({
     <div className="profile-form-container">
       <div className="profile-form-card">
         <h1 className="profile-form-title">
-          {initialData ? "プロフィール編集" : "プロフィール作成"}
+          {initialData ? 'プロフィール編集' : 'プロフィール作成'}
         </h1>
 
         {error && <ErrorMessage message={error} />}
@@ -314,9 +311,7 @@ export function ProfileForm({
                   <div className="profile-form-social-link-service">
                     <select
                       value={link.service}
-                      onChange={(e) =>
-                        handleSocialLinkServiceChange(index, e.target.value)
-                      }
+                      onChange={(e) => handleSocialLinkServiceChange(index, e.target.value)}
                       disabled={loading}
                       className="profile-form-select"
                       aria-label="サービス選択"
@@ -324,23 +319,17 @@ export function ProfileForm({
                       <option value="">サービスを選択</option>
                       <option value={PredefinedService.TWITTER}>Twitter</option>
                       <option value={PredefinedService.GITHUB}>GitHub</option>
-                      <option value={PredefinedService.FACEBOOK}>
-                        Facebook
-                      </option>
+                      <option value={PredefinedService.FACEBOOK}>Facebook</option>
                       <option value="custom">その他</option>
                     </select>
-                    {link.service === "custom" && (
+                    {link.service === 'custom' && (
                       <Input
                         type="text"
-                        value={link.service === "custom" ? "" : link.service}
-                        onChange={(e) =>
-                          handleSocialLinkServiceChange(index, e.target.value)
-                        }
+                        value={link.service === 'custom' ? '' : link.service}
+                        onChange={(e) => handleSocialLinkServiceChange(index, e.target.value)}
                         disabled={loading}
                         placeholder="サービス名を入力"
-                        error={
-                          validationErrors[`socialLinks.${index}.service`]?.[0]
-                        }
+                        error={validationErrors[`socialLinks.${index}.service`]?.[0]}
                       />
                     )}
                     {validationErrors[`socialLinks.${index}.service`] && (
@@ -353,9 +342,7 @@ export function ProfileForm({
                     <Input
                       type="url"
                       value={link.url}
-                      onChange={(e) =>
-                        handleSocialLinkUrlChange(index, e.target.value)
-                      }
+                      onChange={(e) => handleSocialLinkUrlChange(index, e.target.value)}
                       disabled={loading}
                       placeholder="https://example.com"
                       error={validationErrors[`socialLinks.${index}.url`]?.[0]}
@@ -391,7 +378,7 @@ export function ProfileForm({
           {/* 送信ボタン */}
           <div className="profile-form-actions">
             <Button type="submit" fullWidth disabled={loading}>
-              {loading ? "保存中..." : "保存"}
+              {loading ? '保存中...' : '保存'}
             </Button>
             {onCancel && (
               <Button

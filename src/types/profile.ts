@@ -7,9 +7,9 @@
  * 定義済みSNSサービス
  */
 export const PredefinedService = {
-  TWITTER: "twitter",
-  GITHUB: "github",
-  FACEBOOK: "facebook",
+  TWITTER: 'twitter',
+  GITHUB: 'github',
+  FACEBOOK: 'facebook',
 } as const;
 
 /**

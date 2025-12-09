@@ -2,8 +2,8 @@
  * TextAreaコンポーネント
  */
 
-import type { TextareaHTMLAttributes } from "react";
-import "./TextArea.css";
+import type { TextareaHTMLAttributes } from 'react';
+import './TextArea.css';
 
 interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   /** ラベル */
@@ -14,16 +14,8 @@ interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   required?: boolean;
 }
 
-export function TextArea({
-  label,
-  error,
-  required,
-  className = "",
-  id,
-  ...props
-}: TextAreaProps) {
-  const textareaId =
-    id || `textarea-${label?.replace(/\s+/g, "-").toLowerCase()}`;
+export function TextArea({ label, error, required, className = '', id, ...props }: TextAreaProps) {
+  const textareaId = id || `textarea-${label?.replace(/\s+/g, '-').toLowerCase()}`;
   const hasError = !!error;
 
   return (
@@ -36,7 +28,7 @@ export function TextArea({
       )}
       <textarea
         id={textareaId}
-        className={`textarea ${hasError ? "textarea--error" : ""} ${className}`}
+        className={`textarea ${hasError ? 'textarea--error' : ''} ${className}`}
         aria-invalid={hasError}
         aria-describedby={hasError ? `${textareaId}-error` : undefined}
         {...props}

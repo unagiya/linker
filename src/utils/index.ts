@@ -2,4 +2,4 @@
  * ユーティリティのエクスポート
  */
 
-export * from "./validation";
+export * from './validation';

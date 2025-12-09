@@ -1,36 +1,42 @@
 /**
  * ルーティングとナビゲーションの統合テスト
- * 
+ *
  * このテストは、アプリケーション全体のルーティングとナビゲーションが
  * 正しく機能することを検証します。
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "../contexts/AuthContext";
-import { ProfileProvider } from "../contexts/ProfileContext";
-import { LocalStorageRepository } from "../repositories";
-import { ErrorBoundary } from "../components/ErrorBoundary";
-import { Navigation } from "../components/Navigation";
-import { ProtectedRoute } from "../components/ProtectedRoute";
-import { Home } from "../pages/Home";
-import { SignUp } from "../pages/SignUp";
-import { SignIn } from "../pages/SignIn";
-import { CreateProfile } from "../pages/CreateProfile";
-import { ViewProfile } from "../pages/ViewProfile";
-import { EditProfile } from "../pages/EditProfile";
-import { NotFound } from "../pages/NotFound";
-import type { ReactNode } from "react";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from '../contexts/AuthContext';
+import { ProfileProvider } from '../contexts/ProfileContext';
+import { LocalStorageRepository } from '../repositories';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { Navigation } from '../components/Navigation';
+import { ProtectedRoute } from '../components/ProtectedRoute';
+import { Home } from '../pages/Home';
+import { SignUp } from '../pages/SignUp';
+import { SignIn } from '../pages/SignIn';
+import { CreateProfile } from '../pages/CreateProfile';
+import { ViewProfile } from '../pages/ViewProfile';
+import { EditProfile } from '../pages/EditProfile';
+import { NotFound } from '../pages/NotFound';
+import type { ReactNode } from 'react';
 
 // テスト用のAppコンポーネント
-function TestApp({ children, initialEntries }: { children?: ReactNode; initialEntries?: string[] }) {
+function TestApp({
+  children,
+  initialEntries,
+}: {
+  children?: ReactNode;
+  initialEntries?: string[];
+}) {
   const repository = new LocalStorageRepository();
 
   return (
     <ErrorBoundary>
-      <MemoryRouter initialEntries={initialEntries || ["/"]}>
+      <MemoryRouter initialEntries={initialEntries || ['/']}>
         <AuthProvider>
           <ProfileProvider repository={repository}>
             <div className="app">
@@ -69,7 +75,7 @@ function TestApp({ children, initialEntries }: { children?: ReactNode; initialEn
   );
 }
 
-describe("統合テスト: ルーティングとナビゲーション", () => {
+describe('統合テスト: ルーティングとナビゲーション', () => {
   let repository: LocalStorageRepository;
 
   beforeEach(async () => {
@@ -85,12 +91,12 @@ describe("統合テスト: ルーティングとナビゲーション", () => {
   /**
    * シナリオ1: ホームページから各ページへのナビゲーション
    */
-  it.skip("ホームページから登録ページに移動できる", async () => {
+  it.skip('ホームページから登録ページに移動できる', async () => {
     const user = userEvent.setup();
 
     render(
-      <MemoryRouter initialEntries={["/"]}>
-        <App />
+      <MemoryRouter initialEntries={['/']}>
+        <TestApp />
       </MemoryRouter>
     );
 
@@ -109,12 +115,12 @@ describe("統合テスト: ルーティングとナビゲーション", () => {
     });
   });
 
-  it.skip("ホームページからログインページに移動できる", async () => {
+  it.skip('ホームページからログインページに移動できる', async () => {
     const user = userEvent.setup();
 
     render(
-      <MemoryRouter initialEntries={["/"]}>
-        <App />
+      <MemoryRouter initialEntries={['/']}>
+        <TestApp />
       </MemoryRouter>
     );
 
@@ -136,10 +142,10 @@ describe("統合テスト: ルーティングとナビゲーション", () => {
   /**
    * シナリオ2: ナビゲーションバーの表示制御
    */
-  it.skip("未認証ユーザーにはログイン・登録リンクが表示される", async () => {
+  it.skip('未認証ユーザーにはログイン・登録リンクが表示される', async () => {
     render(
-      <MemoryRouter initialEntries={["/"]}>
-        <App />
+      <MemoryRouter initialEntries={['/']}>
+        <TestApp />
       </MemoryRouter>
     );
 
@@ -153,13 +159,13 @@ describe("統合テスト: ルーティングとナビゲーション", () => {
     expect(screen.queryByText(/ログアウト/i)).not.toBeInTheDocument();
   });
 
-  it.skip("認証済みユーザーにはログアウトリンクが表示される", async () => {
+  it.skip('認証済みユーザーにはログアウトリンクが表示される', async () => {
     // 認証済みユーザーとしてアプリケーションをレンダリング
     // （実際の実装では、モックデータまたはテストユーザーを使用）
 
     render(
-      <MemoryRouter initialEntries={["/"]}>
-        <App />
+      <MemoryRouter initialEntries={['/']}>
+        <TestApp />
       </MemoryRouter>
     );
 
@@ -176,18 +182,17 @@ describe("統合テスト: ルーティングとナビゲーション", () => {
   /**
    * シナリオ3: 404ページのテスト
    */
-  it.skip("存在しないパスにアクセスすると404ページが表示される", async () => {
+  it.skip('存在しないパスにアクセスすると404ページが表示される', async () => {
     render(
-      <MemoryRouter initialEntries={["/non-existent-path"]}>
-        <App />
+      <MemoryRouter initialEntries={['/non-existent-path']}>
+        <TestApp />
       </MemoryRouter>
     );
 
     // 404ページが表示される
     await waitFor(() => {
       expect(
-        screen.getByText(/ページが見つかりません/i) ||
-          screen.getByText(/404/i)
+        screen.getByText(/ページが見つかりません/i) || screen.getByText(/404/i)
       ).toBeInTheDocument();
     });
   });
@@ -195,15 +200,15 @@ describe("統合テスト: ルーティングとナビゲーション", () => {
   /**
    * シナリオ4: ログアウト後のリダイレクト
    */
-  it.skip("ログアウトするとホームページにリダイレクトされる", async () => {
+  it.skip('ログアウトするとホームページにリダイレクトされる', async () => {
     const user = userEvent.setup();
 
     // 認証済みユーザーとしてアプリケーションをレンダリング
     // （実際の実装では、モックデータまたはテストユーザーを使用）
 
     render(
-      <MemoryRouter initialEntries={["/"]}>
-        <App />
+      <MemoryRouter initialEntries={['/']}>
+        <TestApp />
       </MemoryRouter>
     );
 
@@ -221,11 +226,11 @@ describe("統合テスト: ルーティングとナビゲーション", () => {
   /**
    * シナリオ5: プロフィールURLの直接アクセス
    */
-  it.skip("プロフィールURLに直接アクセスするとプロフィールが表示される", async () => {
+  it.skip('プロフィールURLに直接アクセスするとプロフィールが表示される', async () => {
     // プロフィールURLに直接アクセス
     render(
-      <MemoryRouter initialEntries={["/profile/test-id"]}>
-        <App />
+      <MemoryRouter initialEntries={['/profile/test-id']}>
+        <TestApp />
       </MemoryRouter>
     );
 
@@ -238,20 +243,18 @@ describe("統合テスト: ルーティングとナビゲーション", () => {
     );
   });
 
-  it.skip("存在しないプロフィールIDにアクセスすると404メッセージが表示される", async () => {
+  it.skip('存在しないプロフィールIDにアクセスすると404メッセージが表示される', async () => {
     // 存在しないプロフィールIDにアクセス
     render(
-      <MemoryRouter initialEntries={["/profile/non-existent-id"]}>
-        <App />
+      <MemoryRouter initialEntries={['/profile/non-existent-id']}>
+        <TestApp />
       </MemoryRouter>
     );
 
     // 404メッセージが表示される
     await waitFor(
       () => {
-        expect(
-          screen.getByText(/プロフィールが見つかりません/i)
-        ).toBeInTheDocument();
+        expect(screen.getByText(/プロフィールが見つかりません/i)).toBeInTheDocument();
       },
       { timeout: 3000 }
     );

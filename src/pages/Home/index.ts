@@ -2,4 +2,4 @@
  * Homeのエクスポート
  */
 
-export * from "./Home";
+export * from './Home';

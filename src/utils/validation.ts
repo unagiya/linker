@@ -3,7 +3,7 @@
  * Zodスキーマとバリデーション関数を提供
  */
 
-import { z } from "zod";
+import { z } from 'zod';
 
 /**
  * アカウント登録用のバリデーションスキーマ
@@ -11,12 +11,12 @@ import { z } from "zod";
 export const signUpSchema = z.object({
   email: z
     .string()
-    .min(1, "メールアドレスは必須です")
-    .email("有効なメールアドレスを入力してください"),
+    .min(1, 'メールアドレスは必須です')
+    .email('有効なメールアドレスを入力してください'),
   password: z
     .string()
-    .min(6, "パスワードは6文字以上で入力してください")
-    .max(100, "パスワードは100文字以内で入力してください"),
+    .min(6, 'パスワードは6文字以上で入力してください')
+    .max(100, 'パスワードは100文字以内で入力してください'),
 });
 
 /**
@@ -25,11 +25,9 @@ export const signUpSchema = z.object({
 export const signInSchema = z.object({
   email: z
     .string()
-    .min(1, "メールアドレスは必須です")
-    .email("有効なメールアドレスを入力してください"),
-  password: z
-    .string()
-    .min(1, "パスワードを入力してください"),
+    .min(1, 'メールアドレスは必須です')
+    .email('有効なメールアドレスを入力してください'),
+  password: z.string().min(1, 'パスワードを入力してください'),
 });
 
 /**
@@ -38,44 +36,28 @@ export const signInSchema = z.object({
 export const socialLinkSchema = z.object({
   service: z
     .string()
-    .min(1, "サービス名は必須です")
-    .max(50, "サービス名は50文字以内で入力してください"),
+    .min(1, 'サービス名は必須です')
+    .max(50, 'サービス名は50文字以内で入力してください'),
   url: z
     .string()
-    .min(1, "URLは必須です")
-    .regex(
-      /^https?:\/\/.+/,
-      "URLはhttp://またはhttps://で始まる有効な形式で入力してください"
-    ),
+    .min(1, 'URLは必須です')
+    .regex(/^https?:\/\/.+/, 'URLはhttp://またはhttps://で始まる有効な形式で入力してください'),
 });
 
 /**
  * プロフィールのバリデーションスキーマ
  */
 export const profileSchema = z.object({
-  name: z
-    .string()
-    .min(1, "名前は必須です")
-    .max(100, "名前は100文字以内で入力してください"),
-  jobTitle: z
-    .string()
-    .min(1, "職種は必須です")
-    .max(100, "職種は100文字以内で入力してください"),
-  bio: z
-    .string()
-    .max(500, "自己紹介は500文字以内で入力してください")
-    .optional(),
-  skills: z
-    .array(z.string())
-    .max(20, "スキルは20個まで登録できます"),
+  name: z.string().min(1, '名前は必須です').max(100, '名前は100文字以内で入力してください'),
+  jobTitle: z.string().min(1, '職種は必須です').max(100, '職種は100文字以内で入力してください'),
+  bio: z.string().max(500, '自己紹介は500文字以内で入力してください').optional(),
+  skills: z.array(z.string()).max(20, 'スキルは20個まで登録できます'),
   yearsOfExperience: z
     .number()
-    .min(0, "経験年数は0以上で入力してください")
-    .max(100, "経験年数は100以下で入力してください")
+    .min(0, '経験年数は0以上で入力してください')
+    .max(100, '経験年数は100以下で入力してください')
     .optional(),
-  socialLinks: z
-    .array(socialLinkSchema)
-    .max(10, "SNSリンクは10個まで登録できます"),
+  socialLinks: z.array(socialLinkSchema).max(10, 'SNSリンクは10個まで登録できます'),
 });
 
 /**
@@ -83,44 +65,28 @@ export const profileSchema = z.object({
  * フォームでは経験年数を文字列として扱うため、専用のスキーマを用意
  */
 export const profileFormSchema = z.object({
-  name: z
-    .string()
-    .min(1, "名前は必須です")
-    .max(100, "名前は100文字以内で入力してください"),
-  jobTitle: z
-    .string()
-    .min(1, "職種は必須です")
-    .max(100, "職種は100文字以内で入力してください"),
-  bio: z
-    .string()
-    .max(500, "自己紹介は500文字以内で入力してください")
-    .optional()
-    .default(""),
-  skills: z
-    .array(z.string())
-    .max(20, "スキルは20個まで登録できます")
-    .default([]),
-  yearsOfExperience: z
-    .string()
-    .optional()
-    .default(""),
+  name: z.string().min(1, '名前は必須です').max(100, '名前は100文字以内で入力してください'),
+  jobTitle: z.string().min(1, '職種は必須です').max(100, '職種は100文字以内で入力してください'),
+  bio: z.string().max(500, '自己紹介は500文字以内で入力してください').optional().default(''),
+  skills: z.array(z.string()).max(20, 'スキルは20個まで登録できます').default([]),
+  yearsOfExperience: z.string().optional().default(''),
   socialLinks: z
     .array(
       z.object({
         service: z
           .string()
-          .min(1, "サービス名は必須です")
-          .max(50, "サービス名は50文字以内で入力してください"),
+          .min(1, 'サービス名は必須です')
+          .max(50, 'サービス名は50文字以内で入力してください'),
         url: z
           .string()
-          .min(1, "URLは必須です")
+          .min(1, 'URLは必須です')
           .regex(
             /^https?:\/\/.+/,
-            "URLはhttp://またはhttps://で始まる有効な形式で入力してください"
+            'URLはhttp://またはhttps://で始まる有効な形式で入力してください'
           ),
       })
     )
-    .max(10, "SNSリンクは10個まで登録できます")
+    .max(10, 'SNSリンクは10個まで登録できます')
     .default([]),
 });
 
@@ -146,7 +112,7 @@ export function validateProfile(data: unknown): ValidationResult<z.infer<typeof 
   // エラーをフィールドごとに整理
   const errors: Record<string, string[]> = {};
   result.error.issues.forEach((error) => {
-    const path = error.path.join(".");
+    const path = error.path.join('.');
     if (!errors[path]) {
       errors[path] = [];
     }
@@ -173,7 +139,7 @@ export function validateProfileForm(
   // エラーをフィールドごとに整理
   const errors: Record<string, string[]> = {};
   result.error.issues.forEach((error) => {
-    const path = error.path.join(".");
+    const path = error.path.join('.');
     if (!errors[path]) {
       errors[path] = [];
     }
@@ -200,7 +166,7 @@ export function validateSocialLink(
   // エラーをフィールドごとに整理
   const errors: Record<string, string[]> = {};
   result.error.issues.forEach((error) => {
-    const path = error.path.join(".");
+    const path = error.path.join('.');
     if (!errors[path]) {
       errors[path] = [];
     }
@@ -218,7 +184,7 @@ export function validateSocialLink(
 export function isValidUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
   } catch {
     return false;
   }
@@ -230,7 +196,7 @@ export function isValidUrl(url: string): boolean {
  * @returns 変換された数値、または undefined
  */
 export function parseYearsOfExperience(value: string): number | undefined {
-  if (!value || value.trim() === "") {
+  if (!value || value.trim() === '') {
     return undefined;
   }
 
@@ -247,9 +213,7 @@ export function parseYearsOfExperience(value: string): number | undefined {
  * @param data バリデーション対象のデータ
  * @returns バリデーション結果
  */
-export function validateSignUp(
-  data: unknown
-): ValidationResult<z.infer<typeof signUpSchema>> {
+export function validateSignUp(data: unknown): ValidationResult<z.infer<typeof signUpSchema>> {
   const result = signUpSchema.safeParse(data);
 
   if (result.success) {
@@ -259,7 +223,7 @@ export function validateSignUp(
   // エラーをフィールドごとに整理
   const errors: Record<string, string[]> = {};
   result.error.issues.forEach((error) => {
-    const path = error.path.join(".");
+    const path = error.path.join('.');
     if (!errors[path]) {
       errors[path] = [];
     }
@@ -274,9 +238,7 @@ export function validateSignUp(
  * @param data バリデーション対象のデータ
  * @returns バリデーション結果
  */
-export function validateSignIn(
-  data: unknown
-): ValidationResult<z.infer<typeof signInSchema>> {
+export function validateSignIn(data: unknown): ValidationResult<z.infer<typeof signInSchema>> {
   const result = signInSchema.safeParse(data);
 
   if (result.success) {
@@ -286,7 +248,7 @@ export function validateSignIn(
   // エラーをフィールドごとに整理
   const errors: Record<string, string[]> = {};
   result.error.issues.forEach((error) => {
-    const path = error.path.join(".");
+    const path = error.path.join('.');
     if (!errors[path]) {
       errors[path] = [];
     }

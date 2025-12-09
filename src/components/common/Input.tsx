@@ -2,8 +2,8 @@
  * Inputコンポーネント
  */
 
-import type { InputHTMLAttributes } from "react";
-import "./Input.css";
+import type { InputHTMLAttributes } from 'react';
+import './Input.css';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   /** ラベル */
@@ -14,15 +14,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   required?: boolean;
 }
 
-export function Input({
-  label,
-  error,
-  required,
-  className = "",
-  id,
-  ...props
-}: InputProps) {
-  const inputId = id || `input-${label?.replace(/\s+/g, "-").toLowerCase()}`;
+export function Input({ label, error, required, className = '', id, ...props }: InputProps) {
+  const inputId = id || `input-${label?.replace(/\s+/g, '-').toLowerCase()}`;
   const hasError = !!error;
 
   return (
@@ -35,7 +28,7 @@ export function Input({
       )}
       <input
         id={inputId}
-        className={`input ${hasError ? "input--error" : ""} ${className}`}
+        className={`input ${hasError ? 'input--error' : ''} ${className}`}
         aria-invalid={hasError}
         aria-describedby={hasError ? `${inputId}-error` : undefined}
         {...props}

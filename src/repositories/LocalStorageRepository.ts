@@ -3,8 +3,8 @@
  * ブラウザのローカルストレージを使用したRepository実装
  */
 
-import type { Profile } from "../types";
-import type { ProfileRepository } from "./ProfileRepository";
+import type { Profile } from '../types';
+import type { ProfileRepository } from './ProfileRepository';
 
 /**
  * ローカルストレージに保存されるプロフィールマップの型
@@ -15,7 +15,7 @@ type ProfileMap = Record<string, Profile>;
  * ローカルストレージを使用したProfileRepositoryの実装
  */
 export class LocalStorageRepository implements ProfileRepository {
-  private readonly STORAGE_KEY = "linker_profiles";
+  private readonly STORAGE_KEY = 'linker_profiles';
 
   /**
    * プロフィールを保存する
@@ -28,7 +28,7 @@ export class LocalStorageRepository implements ProfileRepository {
       this.saveProfileMap(profiles);
     } catch (error) {
       throw new Error(
-        `プロフィールの保存に失敗しました: ${error instanceof Error ? error.message : "不明なエラー"}`
+        `プロフィールの保存に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`
       );
     }
   }
@@ -43,7 +43,7 @@ export class LocalStorageRepository implements ProfileRepository {
       const profiles = await this.loadProfileMap();
       return profiles[id] || null;
     } catch (error) {
-      console.error("プロフィールの読み込みに失敗しました:", error);
+      console.error('プロフィールの読み込みに失敗しました:', error);
       return null;
     }
   }
@@ -59,7 +59,7 @@ export class LocalStorageRepository implements ProfileRepository {
       const profile = Object.values(profiles).find((p) => p.user_id === userId);
       return profile || null;
     } catch (error) {
-      console.error("プロフィールの読み込みに失敗しました:", error);
+      console.error('プロフィールの読み込みに失敗しました:', error);
       return null;
     }
   }
@@ -73,7 +73,7 @@ export class LocalStorageRepository implements ProfileRepository {
       const profiles = await this.loadProfileMap();
       return Object.values(profiles);
     } catch (error) {
-      console.error("プロフィール一覧の読み込みに失敗しました:", error);
+      console.error('プロフィール一覧の読み込みに失敗しました:', error);
       return [];
     }
   }
@@ -89,7 +89,7 @@ export class LocalStorageRepository implements ProfileRepository {
       this.saveProfileMap(profiles);
     } catch (error) {
       throw new Error(
-        `プロフィールの削除に失敗しました: ${error instanceof Error ? error.message : "不明なエラー"}`
+        `プロフィールの削除に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`
       );
     }
   }
@@ -119,14 +119,14 @@ export class LocalStorageRepository implements ProfileRepository {
       const parsed = JSON.parse(data);
 
       // データの形式を検証
-      if (typeof parsed !== "object" || parsed === null) {
-        console.warn("不正なデータ形式です。空の状態で初期化します。");
+      if (typeof parsed !== 'object' || parsed === null) {
+        console.warn('不正なデータ形式です。空の状態で初期化します。');
         return {};
       }
 
       return parsed as ProfileMap;
     } catch (error) {
-      console.error("データの読み込みに失敗しました:", error);
+      console.error('データの読み込みに失敗しました:', error);
       // データが破損している場合は空の状態を返す
       return {};
     }
@@ -141,10 +141,8 @@ export class LocalStorageRepository implements ProfileRepository {
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(profiles));
     } catch (error) {
-      if (error instanceof Error && error.name === "QuotaExceededError") {
-        throw new Error(
-          "ストレージの容量が不足しています。不要なデータを削除してください。"
-        );
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        throw new Error('ストレージの容量が不足しています。不要なデータを削除してください。');
       }
       throw error;
     }

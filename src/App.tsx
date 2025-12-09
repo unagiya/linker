@@ -3,21 +3,21 @@
  * ルートコンポーネント
  */
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { ProfileProvider } from "./contexts/ProfileContext";
-import { LocalStorageRepository } from "./repositories";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import { Navigation } from "./components/Navigation";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { Home } from "./pages/Home";
-import { SignUp } from "./pages/SignUp";
-import { SignIn } from "./pages/SignIn";
-import { CreateProfile } from "./pages/CreateProfile";
-import { ViewProfile } from "./pages/ViewProfile";
-import { EditProfile } from "./pages/EditProfile";
-import { NotFound } from "./pages/NotFound";
-import "./App.css";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProfileProvider } from './contexts/ProfileContext';
+import { LocalStorageRepository } from './repositories';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { Navigation } from './components/Navigation';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { Home } from './pages/Home';
+import { SignUp } from './pages/SignUp';
+import { SignIn } from './pages/SignIn';
+import { CreateProfile } from './pages/CreateProfile';
+import { ViewProfile } from './pages/ViewProfile';
+import { EditProfile } from './pages/EditProfile';
+import { NotFound } from './pages/NotFound';
+import './App.css';
 
 // Repositoryのインスタンスを作成
 const repository = new LocalStorageRepository();
