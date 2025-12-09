@@ -29,7 +29,8 @@ export function ViewProfile() {
         }
       });
     }
-  }, [id, loadProfile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const handleEdit = () => {
     if (id) {

@@ -3,7 +3,7 @@
  * プロフィールの状態管理を担当するContext
  */
 
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import type { Profile, ProfileFormData } from '../../types/profile';
 import type { ProfileRepository } from '../../repositories/ProfileRepository';
 
@@ -111,7 +111,7 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
   /**
    * プロフィール作成
    */
-  const createProfile = async (userId: string, data: ProfileFormData): Promise<Profile> => {
+  const createProfile = useCallback(async (userId: string, data: ProfileFormData): Promise<Profile> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
@@ -149,12 +149,12 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, [repository]);
 
   /**
    * プロフィール更新
    */
-  const updateProfile = async (id: string, data: ProfileFormData): Promise<Profile> => {
+  const updateProfile = useCallback(async (id: string, data: ProfileFormData): Promise<Profile> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
@@ -195,12 +195,12 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, [repository]);
 
   /**
    * プロフィール削除
    */
-  const deleteProfile = async (id: string): Promise<void> => {
+  const deleteProfile = useCallback(async (id: string): Promise<void> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
@@ -214,12 +214,12 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, [repository]);
 
   /**
    * プロフィール読み込み
    */
-  const loadProfile = async (id: string): Promise<Profile | null> => {
+  const loadProfile = useCallback(async (id: string): Promise<Profile | null> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
@@ -235,12 +235,12 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, [repository]);
 
   /**
    * 自分のプロフィール読み込み
    */
-  const loadMyProfile = async (userId: string): Promise<Profile | null> => {
+  const loadMyProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
@@ -256,14 +256,14 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, [repository]);
 
   /**
    * エラークリア
    */
-  const clearError = () => {
+  const clearError = useCallback(() => {
     dispatch({ type: 'CLEAR_ERROR' });
-  };
+  }, []);
 
   const value: ProfileContextValue = {
     ...state,
