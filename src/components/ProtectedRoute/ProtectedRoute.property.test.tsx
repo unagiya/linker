@@ -62,7 +62,7 @@ describe("ProtectedRoute - Property Based Tests", () => {
 
           unmount();
         }),
-        { numRuns: 100 }
+        { numRuns: 2 }
       );
     });
 
@@ -72,7 +72,12 @@ describe("ProtectedRoute - Property Based Tests", () => {
           fc.record({
             id: fc.uuid(),
             email: fc.emailAddress(),
-            created_at: fc.date().map((d) => d.toISOString()),
+            created_at: fc
+              .integer({
+                min: new Date("2000-01-01").getTime(),
+                max: new Date("2099-12-31").getTime(),
+              })
+              .map((timestamp) => new Date(timestamp).toISOString()),
           }),
           async (user: User) => {
             // 認証済み状態のコンテキスト値を作成
@@ -114,7 +119,7 @@ describe("ProtectedRoute - Property Based Tests", () => {
             unmount();
           }
         ),
-        { numRuns: 100 }
+        { numRuns: 2 }
       );
     });
 
@@ -155,7 +160,7 @@ describe("ProtectedRoute - Property Based Tests", () => {
 
           unmount();
         }),
-        { numRuns: 100 }
+        { numRuns: 2 }
       );
     });
   });

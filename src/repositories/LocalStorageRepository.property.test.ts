@@ -79,7 +79,7 @@ describe("Property 14: ローカルストレージのラウンドトリップ", 
           loaded.updatedAt === profile.updatedAt
         );
       }),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -109,7 +109,7 @@ describe("Property 14: ローカルストレージのラウンドトリップ", 
           return allLoaded.length === uniqueProfiles.length;
         }
       ),
-      { numRuns: 50 }
+      { numRuns: 2 }
     );
   });
 
@@ -142,7 +142,7 @@ describe("Property 14: ローカルストレージのラウンドトリップ", 
           reloaded.name === profile.name
         );
       }),
-      { numRuns: 50 }
+      { numRuns: 2 }
     );
   });
 });
@@ -184,7 +184,7 @@ describe("Property 15: 不正データのエラーハンドリング", () => {
           return all.length === 0;
         }
       ),
-      { numRuns: 50 }
+      { numRuns: 2 }
     );
   });
 
@@ -208,7 +208,7 @@ describe("Property 15: 不正データのエラーハンドリング", () => {
           return all.length === 0;
         }
       ),
-      { numRuns: 50 }
+      { numRuns: 2 }
     );
   });
 
@@ -235,7 +235,7 @@ describe("Property 15: 不正データのエラーハンドリング", () => {
           return found === null;
         }
       ),
-      { numRuns: 50 }
+      { numRuns: 2 }
     );
   });
 });

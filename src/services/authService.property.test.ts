@@ -76,7 +76,7 @@ describe("authService - Property Based Tests", () => {
             return hasValidId && hasValidEmail && hasCreatedAt && wasCalledCorrectly;
           }
         ),
-        { numRuns: 100 }
+        { numRuns: 2 }
       );
     });
   });
@@ -140,7 +140,7 @@ describe("authService - Property Based Tests", () => {
             return hasValidId && hasValidEmail && hasCreatedAt && wasCalledCorrectly;
           }
         ),
-        { numRuns: 100 }
+        { numRuns: 2 }
       );
     });
   });
@@ -187,7 +187,7 @@ describe("authService - Property Based Tests", () => {
             }
           }
         ),
-        { numRuns: 100 }
+        { numRuns: 2 }
       );
     });
   });

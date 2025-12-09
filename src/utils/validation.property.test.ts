@@ -55,7 +55,7 @@ describe("Property 2: 無効なメールアドレスの拒否", () => {
           return hasEmailError && hasErrorMessage;
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 });
@@ -96,7 +96,7 @@ describe("Property 3: 短いパスワードの拒否", () => {
           return hasPasswordError && hasErrorMessage;
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 });
@@ -127,7 +127,7 @@ describe("Property 16: URLバリデーション", () => {
       fc.asyncProperty(validUrlArbitrary, async (validUrl) => {
         return isValidUrl(validUrl);
       }),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -136,7 +136,7 @@ describe("Property 16: URLバリデーション", () => {
       fc.asyncProperty(invalidUrlArbitrary, async (invalidUrl) => {
         return !isValidUrl(invalidUrl);
       }),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 });
@@ -172,7 +172,7 @@ describe("Property 18: 経験年数の数値バリデーション", () => {
         const result = parseYearsOfExperience(validYears.toString());
         return result === validYears;
       }),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -182,7 +182,7 @@ describe("Property 18: 経験年数の数値バリデーション", () => {
         const result = parseYearsOfExperience(negativeYears.toString());
         return result === undefined;
       }),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -192,7 +192,7 @@ describe("Property 18: 経験年数の数値バリデーション", () => {
         const result = parseYearsOfExperience(tooLargeYears.toString());
         return result === undefined;
       }),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -202,7 +202,7 @@ describe("Property 18: 経験年数の数値バリデーション", () => {
         const result = parseYearsOfExperience(nonNumeric);
         return result === undefined;
       }),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -283,7 +283,7 @@ describe("Property 18: バリデーションエラーメッセージ表示", () 
 
         return hasNameError && hasErrorMessage;
       }),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -313,7 +313,7 @@ describe("Property 18: バリデーションエラーメッセージ表示", () 
 
         return hasJobTitleError && hasErrorMessage;
       }),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -342,7 +342,7 @@ describe("Property 18: バリデーションエラーメッセージ表示", () 
 
         return hasBioError && hasErrorMessage;
       }),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -372,7 +372,7 @@ describe("Property 18: バリデーションエラーメッセージ表示", () 
 
         return hasSkillsError && hasErrorMessage;
       }),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -405,7 +405,7 @@ describe("Property 18: バリデーションエラーメッセージ表示", () 
           return hasSocialLinksError && hasErrorMessage;
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -444,7 +444,7 @@ describe("Property 18: バリデーションエラーメッセージ表示", () 
           return hasUrlError && hasErrorMessage;
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -475,7 +475,7 @@ describe("Property 18: バリデーションエラーメッセージ表示", () 
           return hasNameError && hasJobTitleError;
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 });

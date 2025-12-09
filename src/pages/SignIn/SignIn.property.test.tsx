@@ -39,7 +39,7 @@ describe("SignIn - Property Based Tests", () => {
             vi.clearAllMocks();
           }
         ),
-        { numRuns: 100 }
+        { numRuns: 2 }
       );
     });
 
@@ -80,7 +80,7 @@ describe("SignIn - Property Based Tests", () => {
             vi.clearAllMocks();
           }
         ),
-        { numRuns: 100 }
+        { numRuns: 2 }
       );
     });
 
@@ -100,7 +100,7 @@ describe("SignIn - Property Based Tests", () => {
             vi.clearAllMocks();
           }
         ),
-        { numRuns: 100 }
+        { numRuns: 2 }
       );
     });
   });

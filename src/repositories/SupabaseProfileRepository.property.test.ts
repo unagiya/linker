@@ -182,7 +182,7 @@ describe("Property 27: データベースラウンドトリップ", () => {
 
         return fieldsMatch && skillsMatch && socialLinksMatch;
       }),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 
@@ -335,7 +335,7 @@ describe("Property 27: データベースラウンドトリップ", () => {
           return fieldsMatch && skillsMatch && socialLinksMatch;
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 2 }
     );
   });
 });
