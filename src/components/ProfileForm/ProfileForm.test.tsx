@@ -67,6 +67,9 @@ describe('ProfileForm', () => {
           skills: [],
           yearsOfExperience: '',
           socialLinks: [],
+          imageFile: undefined,
+          imageUrl: undefined,
+          removeImage: false,
         });
       });
     });
@@ -307,6 +310,94 @@ describe('ProfileForm', () => {
       render(<ProfileForm onSubmit={mockOnSubmit} error="プロフィールの保存に失敗しました" />);
 
       expect(screen.getByText('プロフィールの保存に失敗しました')).toBeInTheDocument();
+    });
+  });
+
+  describe('画像アップロード', () => {
+    it('画像ファイルを選択できる', async () => {
+      const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
+
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
+
+      const file = new File(['test image'], 'test.jpg', { type: 'image/jpeg' });
+      const fileInput = screen.getByLabelText(/画像ファイルを選択/);
+
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      await waitFor(() => {
+        expect(screen.getByAltText('プロフィール画像プレビュー')).toBeInTheDocument();
+      });
+    });
+
+    it('画像を削除できる', async () => {
+      const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
+      const initialData: Partial<ProfileFormData> = {
+        name: '山田太郎',
+        jobTitle: 'エンジニア',
+        imageUrl: 'https://example.com/image.jpg',
+        skills: [],
+        socialLinks: [],
+      };
+
+      render(<ProfileForm onSubmit={mockOnSubmit} initialData={initialData} />);
+
+      expect(screen.getByAltText('プロフィール画像プレビュー')).toBeInTheDocument();
+
+      const removeButton = screen.getByRole('button', { name: '画像を削除' });
+      fireEvent.click(removeButton);
+
+      await waitFor(() => {
+        expect(screen.queryByAltText('プロフィール画像プレビュー')).not.toBeInTheDocument();
+      });
+    });
+
+    it('画像プレビューが表示される', async () => {
+      const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
+      const initialData: Partial<ProfileFormData> = {
+        name: '山田太郎',
+        jobTitle: 'エンジニア',
+        imageUrl: 'https://example.com/image.jpg',
+        skills: [],
+        socialLinks: [],
+      };
+
+      render(<ProfileForm onSubmit={mockOnSubmit} initialData={initialData} />);
+
+      // 画像プレビューが表示されることを確認
+      expect(screen.getByAltText('プロフィール画像プレビュー')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '画像を削除' })).toBeInTheDocument();
+    });
+
+    it('画像ファイルがフォーム送信に含まれる', async () => {
+      const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
+
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
+
+      // フォーム入力
+      const nameInput = screen.getByLabelText(/名前/);
+      const jobTitleInput = screen.getByLabelText(/職種/);
+
+      fireEvent.change(nameInput, { target: { value: '山田太郎' } });
+      fireEvent.change(jobTitleInput, { target: { value: 'エンジニア' } });
+
+      // 画像ファイル選択
+      const file = new File(['test image'], 'test.jpg', { type: 'image/jpeg' });
+      const fileInput = screen.getByLabelText(/画像ファイルを選択/);
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      // フォーム送信
+      const submitButton = screen.getByRole('button', { name: '保存' });
+      fireEvent.click(submitButton);
+
+      await waitFor(() => {
+        expect(mockOnSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: '山田太郎',
+            jobTitle: 'エンジニア',
+            imageFile: file,
+          })
+        );
+      });
     });
   });
 });

@@ -3,13 +3,14 @@
  * プロフィールの作成・編集フォーム
  */
 
-import { useState, useEffect } from 'react';
-import type { FormEvent } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import type { FormEvent, ChangeEvent } from 'react';
 import { Input } from '../common/Input';
 import { TextArea } from '../common/TextArea';
 import { Button } from '../common/Button';
 import { ErrorMessage } from '../common/ErrorMessage';
 import { validateProfileForm } from '../../utils/validation';
+import { validateImageFile } from '../../services/imageService';
 import { PredefinedService } from '../../types/profile';
 import type { ProfileFormData } from '../../types/profile';
 import './ProfileForm.css';
@@ -44,6 +45,10 @@ export function ProfileForm({
   const [socialLinks, setSocialLinks] = useState<Array<{ service: string; url: string }>>(
     initialData?.socialLinks || []
   );
+  const [imageFile, setImageFile] = useState<File | undefined>(undefined);
+  const [imagePreview, setImagePreview] = useState<string | undefined>(initialData?.imageUrl);
+  const [removeImage, setRemoveImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // バリデーションエラー
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
@@ -58,8 +63,63 @@ export function ProfileForm({
       setSkills(initialData.skills || []);
       setYearsOfExperience(initialData.yearsOfExperience || '');
       setSocialLinks(initialData.socialLinks || []);
+      setImagePreview(initialData.imageUrl);
+      setImageFile(undefined);
+      setRemoveImage(false);
     }
   }, [initialData]);
+
+  /**
+   * 画像ファイル選択ハンドラ
+   */
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 画像バリデーション
+    try {
+      validateImageFile(file);
+      setImageFile(file);
+      setRemoveImage(false);
+
+      // プレビュー生成
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // エラーをクリア
+      if (validationErrors.imageFile) {
+        const newErrors = { ...validationErrors };
+        delete newErrors.imageFile;
+        setValidationErrors(newErrors);
+      }
+    } catch (error) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        imageFile: [error instanceof Error ? error.message : '画像の読み込みに失敗しました'],
+      }));
+    }
+  };
+
+  /**
+   * 画像削除ハンドラ
+   */
+  const handleRemoveImage = () => {
+    setImageFile(undefined);
+    setImagePreview(undefined);
+    setRemoveImage(true);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    // エラーをクリア
+    if (validationErrors.imageFile) {
+      const newErrors = { ...validationErrors };
+      delete newErrors.imageFile;
+      setValidationErrors(newErrors);
+    }
+  };
 
   /**
    * フォーム送信ハンドラ
@@ -74,6 +134,9 @@ export function ProfileForm({
       skills,
       yearsOfExperience,
       socialLinks,
+      imageFile,
+      imageUrl: imagePreview,
+      removeImage,
     };
 
     // バリデーション
@@ -208,6 +271,47 @@ export function ProfileForm({
         {error && <ErrorMessage message={error} />}
 
         <form onSubmit={handleSubmit} className="profile-form">
+          {/* プロフィール画像 */}
+          <div className="profile-form-section">
+            <label className="profile-form-section-label">プロフィール画像</label>
+            <div className="profile-form-image-upload">
+              {imagePreview ? (
+                <div className="profile-form-image-preview">
+                  <img src={imagePreview} alt="プロフィール画像プレビュー" />
+                  <Button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    disabled={loading}
+                    variant="danger"
+                    aria-label="画像を削除"
+                  >
+                    画像を削除
+                  </Button>
+                </div>
+              ) : (
+                <div className="profile-form-image-input">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleImageChange}
+                    disabled={loading}
+                    className="profile-form-file-input"
+                    aria-label="画像ファイルを選択"
+                  />
+                  <p className="profile-form-image-hint">
+                    JPEG、PNG、WebP形式、最大5MBまで
+                  </p>
+                </div>
+              )}
+            </div>
+            {validationErrors.imageFile && (
+              <span className="profile-form-error" role="alert">
+                {validationErrors.imageFile[0]}
+              </span>
+            )}
+          </div>
+
           {/* 名前 */}
           <Input
             label="名前"
@@ -320,6 +424,7 @@ export function ProfileForm({
                       <option value={PredefinedService.TWITTER}>Twitter</option>
                       <option value={PredefinedService.GITHUB}>GitHub</option>
                       <option value={PredefinedService.FACEBOOK}>Facebook</option>
+                      <option value={PredefinedService.LINKEDIN}>LinkedIn</option>
                       <option value="custom">その他</option>
                     </select>
                     {link.service === 'custom' && (
