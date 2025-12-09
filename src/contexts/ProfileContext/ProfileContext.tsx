@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import type { Profile, ProfileFormData } from '../../types/profile';
 import type { ProfileRepository } from '../../repositories/ProfileRepository';
+import { uploadProfileImage, deleteProfileImage } from '../../services/imageService';
 
 /**
  * プロフィール状態の型
@@ -116,6 +117,17 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
 
+      // 画像アップロード処理
+      let imageUrl: string | undefined = undefined;
+      if (data.imageFile) {
+        try {
+          imageUrl = await uploadProfileImage(userId, data.imageFile);
+        } catch (imageError) {
+          // 画像アップロードに失敗してもプロフィール作成は継続
+          console.error('画像のアップロードに失敗しました:', imageError);
+        }
+      }
+
       // ProfileFormDataからProfileを作成
       const now = new Date().toISOString();
       const profile: Profile = {
@@ -124,6 +136,7 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
         name: data.name,
         jobTitle: data.jobTitle,
         bio: data.bio || undefined,
+        imageUrl: imageUrl,
         skills: data.skills,
         yearsOfExperience: data.yearsOfExperience
           ? parseInt(data.yearsOfExperience, 10)
@@ -165,12 +178,47 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
         throw new Error('プロフィールが見つかりません');
       }
 
+      // 画像処理
+      let imageUrl: string | undefined = existingProfile.imageUrl;
+
+      // 画像削除フラグがある場合
+      if (data.removeImage) {
+        if (existingProfile.imageUrl) {
+          try {
+            await deleteProfileImage(existingProfile.imageUrl);
+          } catch (imageError) {
+            console.error('画像の削除に失敗しました:', imageError);
+          }
+        }
+        imageUrl = undefined;
+      }
+      // 新しい画像ファイルがある場合
+      else if (data.imageFile) {
+        // 既存の画像を削除
+        if (existingProfile.imageUrl) {
+          try {
+            await deleteProfileImage(existingProfile.imageUrl);
+          } catch (imageError) {
+            console.error('既存画像の削除に失敗しました:', imageError);
+          }
+        }
+        // 新しい画像をアップロード
+        try {
+          imageUrl = await uploadProfileImage(existingProfile.user_id, data.imageFile);
+        } catch (imageError) {
+          console.error('画像のアップロードに失敗しました:', imageError);
+          // アップロード失敗時は既存のURLを保持
+          imageUrl = existingProfile.imageUrl;
+        }
+      }
+
       // 更新されたプロフィールを作成
       const updatedProfile: Profile = {
         ...existingProfile,
         name: data.name,
         jobTitle: data.jobTitle,
         bio: data.bio || undefined,
+        imageUrl: imageUrl,
         skills: data.skills,
         yearsOfExperience: data.yearsOfExperience
           ? parseInt(data.yearsOfExperience, 10)
@@ -204,6 +252,16 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
+
+      // プロフィールを取得して画像URLを確認
+      const profile = await repository.findById(id);
+      if (profile?.imageUrl) {
+        try {
+          await deleteProfileImage(profile.imageUrl);
+        } catch (imageError) {
+          console.error('画像の削除に失敗しました:', imageError);
+        }
+      }
 
       await repository.delete(id);
 
