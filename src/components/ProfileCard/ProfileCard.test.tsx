@@ -121,21 +121,24 @@ describe('ProfileCard', () => {
       expect(screen.queryByText('SNS・外部リンク')).not.toBeInTheDocument();
     });
 
-    it('カスタムサービスのリンクが表示される', () => {
-      const profileWithCustomLink: Profile = {
+    it('LinkedInのリンクが表示される', () => {
+      const profileWithLinkedIn: Profile = {
         ...mockProfile,
         socialLinks: [
           {
             id: 'link-1',
-            service: 'LinkedIn',
+            service: 'linkedin',
             url: 'https://linkedin.com/in/test',
           },
         ],
       };
 
-      render(<ProfileCard profile={profileWithCustomLink} />);
+      render(<ProfileCard profile={profileWithLinkedIn} />);
 
-      expect(screen.getByText('LinkedIn')).toBeInTheDocument();
+      const linkedinLink = screen.getByLabelText('LinkedInへのリンク');
+      expect(linkedinLink).toBeInTheDocument();
+      // SVGアイコンが含まれていることを確認
+      expect(linkedinLink.querySelector('svg')).toBeInTheDocument();
     });
   });
 
@@ -248,6 +251,67 @@ describe('ProfileCard', () => {
       render(<ProfileCard profile={mockProfile} />);
 
       expect(screen.queryByRole('button', { name: '共有' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('プロフィール画像の表示', () => {
+    it('imageUrlがある場合、画像が表示される', () => {
+      const profileWithImage: Profile = {
+        ...mockProfile,
+        imageUrl: 'https://example.com/image.jpg',
+      };
+
+      render(<ProfileCard profile={profileWithImage} />);
+
+      const image = screen.getByAltText('山田太郎のプロフィール画像');
+      expect(image).toBeInTheDocument();
+      expect(image).toHaveAttribute('src', 'https://example.com/image.jpg');
+    });
+
+    it('imageUrlがない場合、デフォルトアバターが表示される', () => {
+      render(<ProfileCard profile={mockProfile} />);
+
+      expect(screen.getByLabelText('デフォルトアバター')).toBeInTheDocument();
+    });
+  });
+
+  describe('SNSリンクアイコンの表示', () => {
+    it('定義済みサービス（GitHub）は公式アイコンが表示される', () => {
+      render(<ProfileCard profile={mockProfile} />);
+
+      const githubLink = screen.getByLabelText('GitHubへのリンク');
+      expect(githubLink).toBeInTheDocument();
+      // SVGアイコンが含まれていることを確認
+      expect(githubLink.querySelector('svg')).toBeInTheDocument();
+    });
+
+    it('定義済みサービス（Twitter）は公式アイコンが表示される', () => {
+      render(<ProfileCard profile={mockProfile} />);
+
+      const twitterLink = screen.getByLabelText('Twitterへのリンク');
+      expect(twitterLink).toBeInTheDocument();
+      // SVGアイコンが含まれていることを確認
+      expect(twitterLink.querySelector('svg')).toBeInTheDocument();
+    });
+
+    it('カスタムサービスはサービス名が表示される', () => {
+      const profileWithCustomService: Profile = {
+        ...mockProfile,
+        socialLinks: [
+          {
+            id: 'link-1',
+            service: 'MyCustomService',
+            url: 'https://example.com',
+          },
+        ],
+      };
+
+      const { container } = render(<ProfileCard profile={profileWithCustomService} />);
+
+      // カスタムサービス名が表示されていることを確認
+      const customServiceElement = container.querySelector('.profile-card-social-custom');
+      expect(customServiceElement).toBeInTheDocument();
+      expect(customServiceElement).toHaveTextContent('MyCustomService');
     });
   });
 });
