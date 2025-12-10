@@ -277,7 +277,11 @@ export function ProfileForm({
             <div className="profile-form-image-upload">
               {imagePreview ? (
                 <div className="profile-form-image-preview">
-                  <img src={imagePreview} alt="プロフィール画像プレビュー" />
+                  <img 
+                    src={imagePreview} 
+                    alt="プロフィール画像プレビュー" 
+                    loading="lazy"
+                  />
                   <Button
                     type="button"
                     onClick={handleRemoveImage}

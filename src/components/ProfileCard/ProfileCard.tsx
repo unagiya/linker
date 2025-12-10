@@ -3,6 +3,7 @@
  * プロフィール情報を名刺風に表示するコンポーネント
  */
 
+import React from 'react';
 import type { Profile } from '../../types/profile';
 import { PredefinedService } from '../../types/profile';
 import { Button } from '../common/Button';
@@ -101,7 +102,7 @@ function getSocialLabel(service: string): string {
   }
 }
 
-export function ProfileCard({
+export const ProfileCard = React.memo(function ProfileCard({
   profile,
   currentUserId,
   onEdit,
@@ -120,6 +121,7 @@ export function ProfileCard({
             src={profile.imageUrl}
             alt={`${profile.name}のプロフィール画像`}
             className="profile-card-image"
+            loading="lazy"
           />
         ) : (
           <div className="profile-card-avatar" aria-label="デフォルトアバター">
@@ -216,4 +218,4 @@ export function ProfileCard({
       </div>
     </div>
   );
-}
+});
