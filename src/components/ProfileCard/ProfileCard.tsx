@@ -114,106 +114,115 @@ export const ProfileCard = React.memo(function ProfileCard({
 
   return (
     <div className="profile-card">
-      {/* プロフィール画像 */}
-      <div className="profile-card-image-container">
-        {profile.imageUrl ? (
-          <img
-            src={profile.imageUrl}
-            alt={`${profile.name}のプロフィール画像`}
-            className="profile-card-image"
-            loading="lazy"
-          />
-        ) : (
-          <div className="profile-card-avatar" aria-label="デフォルトアバター">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="profile-card-avatar-icon"
-            >
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-          </div>
-        )}
-      </div>
-
+      {/* ヘッダー部分 - プロフィール画像と基本情報を横並び */}
       <div className="profile-card-header">
-        <h1 className="profile-card-name">{profile.name}</h1>
-        <p className="profile-card-job-title">{profile.jobTitle}</p>
+        <div className="profile-card-image-container">
+          {profile.imageUrl ? (
+            <img
+              src={profile.imageUrl}
+              alt={`${profile.name}のプロフィール画像`}
+              className="profile-card-image"
+              loading="lazy"
+            />
+          ) : (
+            <div className="profile-card-avatar" aria-label="デフォルトアバター">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="profile-card-avatar-icon"
+              >
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+              </svg>
+            </div>
+          )}
+        </div>
+
+        <div className="profile-card-basic-info">
+          <h1 className="profile-card-name">{profile.name}</h1>
+          <p className="profile-card-job-title">{profile.jobTitle}</p>
+          {profile.yearsOfExperience !== undefined && profile.yearsOfExperience !== null && (
+            <p className="profile-card-experience-inline">
+              経験年数: {profile.yearsOfExperience}年
+            </p>
+          )}
+        </div>
+
+        {/* アクションボタン - ヘッダー右側 */}
+        <div className="profile-card-header-actions">
+          {onShare && (
+            <Button onClick={onShare} variant="secondary" size="small">
+              共有
+            </Button>
+          )}
+          {isOwner && onEdit && (
+            <Button onClick={onEdit} variant="primary" size="small">
+              編集
+            </Button>
+          )}
+          {isOwner && onDelete && (
+            <Button onClick={onDelete} variant="danger" size="small">
+              削除
+            </Button>
+          )}
+        </div>
       </div>
 
-      {profile.bio && (
-        <div className="profile-card-section">
-          <h2 className="profile-card-section-title">自己紹介</h2>
-          <p className="profile-card-bio">{profile.bio}</p>
-        </div>
-      )}
-
-      {profile.yearsOfExperience !== undefined && profile.yearsOfExperience !== null && (
-        <div className="profile-card-section">
-          <h2 className="profile-card-section-title">経験年数</h2>
-          <p className="profile-card-experience">{profile.yearsOfExperience}年</p>
-        </div>
-      )}
-
-      {profile.skills.length > 0 && (
-        <div className="profile-card-section">
-          <h2 className="profile-card-section-title">スキル</h2>
-          <div className="profile-card-skills">
-            {profile.skills.map((skill, index) => (
-              <span key={index} className="profile-card-skill-tag">
-                {skill}
-              </span>
-            ))}
+      {/* メインコンテンツ */}
+      <div className="profile-card-content">
+        {/* 自己紹介 */}
+        {profile.bio && (
+          <div className="profile-card-section">
+            <h2 className="profile-card-section-title">自己紹介</h2>
+            <p className="profile-card-bio">{profile.bio}</p>
           </div>
-        </div>
-      )}
+        )}
 
-      {profile.socialLinks.length > 0 && (
-        <div className="profile-card-section">
-          <h2 className="profile-card-section-title">SNS・外部リンク</h2>
-          <div className="profile-card-social-links">
-            {profile.socialLinks.map((link) => {
-              const icon = getSocialIcon(link.service);
-              return (
-                <a
-                  key={link.id}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="profile-card-social-link"
-                  aria-label={`${getSocialLabel(link.service)}へのリンク`}
-                >
-                  {icon ? (
-                    // 定義済みサービスは公式アイコンを表示
-                    <span className="profile-card-social-icon">{icon}</span>
-                  ) : (
-                    // カスタムサービスはサービス名を表示
-                    <span className="profile-card-social-custom">{link.service}</span>
-                  )}
-                  <span className="profile-card-social-label">{getSocialLabel(link.service)}</span>
-                </a>
-              );
-            })}
+        {/* スキルと経験を横並び */}
+        <div className="profile-card-info-grid">
+          {profile.skills.length > 0 && (
+            <div className="profile-card-section">
+              <h2 className="profile-card-section-title">スキル</h2>
+              <div className="profile-card-skills">
+                {profile.skills.map((skill, index) => (
+                  <span key={index} className="profile-card-skill-tag">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* SNSリンク - アイコンのみで横並び */}
+        {profile.socialLinks.length > 0 && (
+          <div className="profile-card-section">
+            <h2 className="profile-card-section-title">SNS・外部リンク</h2>
+            <div className="profile-card-social-links">
+              {profile.socialLinks.map((link) => {
+                const icon = getSocialIcon(link.service);
+                return (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="profile-card-social-link"
+                    aria-label={`${getSocialLabel(link.service)}へのリンク`}
+                    title={getSocialLabel(link.service)}
+                  >
+                    {icon ? (
+                      // 定義済みサービスは公式アイコンを表示
+                      <span className="profile-card-social-icon">{icon}</span>
+                    ) : (
+                      // カスタムサービスはサービス名を表示
+                      <span className="profile-card-social-custom">{link.service}</span>
+                    )}
+                  </a>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
-
-      <div className="profile-card-actions">
-        {onShare && (
-          <Button onClick={onShare} variant="secondary" fullWidth>
-            共有
-          </Button>
-        )}
-        {isOwner && onEdit && (
-          <Button onClick={onEdit} variant="primary" fullWidth>
-            編集
-          </Button>
-        )}
-        {isOwner && onDelete && (
-          <Button onClick={onDelete} variant="danger" fullWidth>
-            削除
-          </Button>
         )}
       </div>
     </div>

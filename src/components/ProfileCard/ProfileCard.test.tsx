@@ -49,7 +49,7 @@ describe('ProfileCard', () => {
     it('経験年数が表示される', () => {
       render(<ProfileCard profile={mockProfile} />);
 
-      expect(screen.getByText('5年')).toBeInTheDocument();
+      expect(screen.getByText('経験年数: 5年')).toBeInTheDocument();
     });
 
     it('スキルが表示される', () => {
@@ -79,7 +79,7 @@ describe('ProfileCard', () => {
 
       render(<ProfileCard profile={profileWithoutExperience} />);
 
-      expect(screen.queryByText(/年/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/経験年数:/)).not.toBeInTheDocument();
     });
 
     it('スキルがない場合は表示されない', () => {
