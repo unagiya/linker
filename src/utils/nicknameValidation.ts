@@ -42,7 +42,11 @@ export function validateNickname(nickname: string): NicknameValidationResult {
     return { isValid: true };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { isValid: false, error: error.errors[0].message };
+      // ZodErrorの最初のエラーメッセージを取得
+      const firstIssue = error.issues[0];
+      if (firstIssue?.message) {
+        return { isValid: false, error: firstIssue.message };
+      }
     }
     return { isValid: false, error: "不明なエラーが発生しました" };
   }

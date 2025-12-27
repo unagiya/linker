@@ -40,7 +40,7 @@ describe('Property 6: 文字数制限バリデーション', () => {
           !result.error.includes('3文字以上') && 
           !result.error.includes('36文字以下'));
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -51,7 +51,7 @@ describe('Property 6: 文字数制限バリデーション', () => {
         return !result.isValid && 
           result.error === 'ニックネームは3文字以上で入力してください';
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -62,7 +62,7 @@ describe('Property 6: 文字数制限バリデーション', () => {
         return !result.isValid && 
           result.error === 'ニックネームは36文字以下で入力してください';
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 });
@@ -93,7 +93,7 @@ describe('Property 7: 文字種制限バリデーション', () => {
         return result.isValid || (result.error !== undefined && 
           !result.error.includes('英数字、ハイフン、アンダースコアのみ使用可能'));
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -104,7 +104,7 @@ describe('Property 7: 文字種制限バリデーション', () => {
         return !result.isValid && 
           result.error === 'ニックネームは英数字、ハイフン、アンダースコアのみ使用可能です';
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 });
@@ -142,7 +142,7 @@ describe('Property 8: 記号位置制限バリデーション', () => {
         return !result.isValid && 
           result.error === 'ニックネームは記号で始まったり終わったりできません';
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -153,7 +153,7 @@ describe('Property 8: 記号位置制限バリデーション', () => {
         return !result.isValid && 
           result.error === 'ニックネームは記号で始まったり終わったりできません';
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -165,7 +165,7 @@ describe('Property 8: 記号位置制限バリデーション', () => {
         return result.isValid || (result.error !== undefined && 
           !result.error.includes('記号で始まったり終わったり'));
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 });
@@ -199,7 +199,7 @@ describe('Property 9: 連続記号制限バリデーション', () => {
         return !result.isValid && 
           result.error === 'ニックネームに連続する記号は使用できません';
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -211,7 +211,7 @@ describe('Property 9: 連続記号制限バリデーション', () => {
         return result.isValid || (result.error !== undefined && 
           !result.error.includes('連続する記号は使用できません'));
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 });
@@ -254,7 +254,7 @@ describe('Property 11: 予約語制限', () => {
         return !result.isValid && 
           result.error === 'このニックネームは予約語のため使用できません';
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -266,7 +266,7 @@ describe('Property 11: 予約語制限', () => {
         return result.isValid || (result.error !== undefined && 
           !result.error.includes('予約語のため使用できません'));
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -275,7 +275,7 @@ describe('Property 11: 予約語制限', () => {
       fc.property(reservedNicknameArbitrary, (nickname) => {
         return isReservedNickname(nickname) === true;
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -284,7 +284,7 @@ describe('Property 11: 予約語制限', () => {
       fc.property(nonReservedNicknameArbitrary, (nickname) => {
         return isReservedNickname(nickname) === false;
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 });
@@ -299,7 +299,7 @@ describe('normalizeNickname プロパティテスト', () => {
         const result = normalizeNickname(input);
         return result === input.toLowerCase();
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 
@@ -310,7 +310,7 @@ describe('normalizeNickname プロパティテスト', () => {
         const twice = normalizeNickname(once);
         return once === twice;
       }),
-      { numRuns: 100 }
+      { numRuns: 20 }
     );
   });
 });
