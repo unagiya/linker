@@ -65,6 +65,22 @@ export class LocalStorageRepository implements ProfileRepository {
   }
 
   /**
+   * ニックネームでプロフィールを検索する
+   * @param nickname ニックネーム
+   * @returns プロフィール、または存在しない場合はnull
+   */
+  async findByNickname(nickname: string): Promise<Profile | null> {
+    try {
+      const profiles = await this.loadProfileMap();
+      const profile = Object.values(profiles).find((p) => p.nickname.toLowerCase() === nickname.toLowerCase());
+      return profile || null;
+    } catch (error) {
+      console.error('プロフィールの読み込みに失敗しました:', error);
+      return null;
+    }
+  }
+
+  /**
    * すべてのプロフィールを取得する
    * @returns プロフィールの配列
    */

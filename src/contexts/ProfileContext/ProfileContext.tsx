@@ -133,6 +133,7 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
       const profile: Profile = {
         id: crypto.randomUUID(),
         user_id: userId,
+        nickname: data.nickname,
         name: data.name,
         jobTitle: data.jobTitle,
         bio: data.bio || undefined,
@@ -215,6 +216,7 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
       // 更新されたプロフィールを作成
       const updatedProfile: Profile = {
         ...existingProfile,
+        nickname: data.nickname,
         name: data.name,
         jobTitle: data.jobTitle,
         bio: data.bio || undefined,

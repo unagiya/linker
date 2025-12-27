@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiroでアプリを作ってみた。</title>
+    
+    <!-- Reveal.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/dist/theme/white.css" id="theme">
+    
+    <!-- Prism.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/custom.css">
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <!-- タイトルスライド -->
+            <section class="title-slide" data-background-color="#2563eb">
+                <h1>Kiroでアプリを作ってみた。</h1>
+                <p>AI支援開発ツールを使った実体験</p>
+                <p>〜 AWS re:Invent 2025 から始まった開発の旅 〜</p>
+                <br>
+                <p>
+                    <small>2025年12月16日 ライトニングトーク</small>
+                </p>
+            </section>
+            
+            <!-- 自己紹介スライド -->
+            <section>
+                <h2>👋 自己紹介</h2>
+                <div class="two-columns">
+                    <div class="column">
+                        <h3>背景</h3>
+                        <ul>
+                            <li>🧑‍💻 ソフトウェアエンジニア</li>
+                            <li>🌐 Web開発・フルスタック</li>
+                            <li>🤖 AI技術に興味</li>
+                            <li>📚 新しい開発手法を探求中</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>今回の発表について</h3>
+                        <ul>
+                            <li class="fragment">AWS re:Invent 2025でAI開発ツールの進化を実感</li>
+                            <li class="fragment">「実際に試してみよう！」</li>
+                            <li class="fragment">Kiroを使ってLinkerアプリを開発</li>
+                            <li class="fragment">その実体験をシェアします</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="section-header fragment">
+                    <p><strong>今日のゴール:</strong> AI支援開発の実際の効果と可能性をお伝えします</p>
+                </div>
+            </section>
+            
+            <!-- AWS re:Invent 2025 体験 -->
+            <section>
+                <h2>🚀 AWS re:Invent 2025 での発見</h2>
+                <div class="section-header">
+                    <p>Las Vegasで感じたAI開発ツールの進化</p>
+                </div>
+                
+                <div class="fragment">
+                    <h3>印象的だった3つのAIツール</h3>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-number">🔧</span>
+                            <div class="stat-label">
+                                <strong>AWS DevOpsAgent</strong><br>
+                                CI/CDパイプラインの自動最適化
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">🛡️</span>
+                            <div class="stat-label">
+                                <strong>AWS SecurityAgent</strong><br>
+                                リアルタイム脅威検出・対応
+                            </div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">📊</span>
+                            <div class="stat-label">
+                                <strong>Datadog Bits AI</strong><br>
+                                監視データの自動分析
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- AI開発トレンド -->
+            <section>
+                <h2>💡 re:Inventで見えたトレンド</h2>
+                
+                <div class="two-columns">
+                    <div class="column">
+                        <h3>🔥 AI支援開発の急速な普及</h3>
+                        <ul>
+                            <li class="fragment">コード生成だけでなく、開発プロセス全体をサポート</li>
+                            <li class="fragment">要件定義から運用まで一貫したAI支援</li>
+                            <li class="fragment">品質向上と開発速度の両立</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>🤔 でも実際のところは？</h3>
+                        <ul>
+                            <li class="fragment">デモは素晴らしいけど...</li>
+                            <li class="fragment">実際の開発で使えるの？</li>
+                            <li class="fragment">本当に効果があるの？</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="section-header fragment">
+                    <p><strong>そこで...</strong> 実際にAI支援開発ツールを試してみることにしました！</p>
+                </div>
+            </section>
+            
+            <!-- Kiro紹介 -->
+            <section>
+                <h2>🤖 Kiroとの出会い</h2>
+                
+                <div class="section-header">
+                    <p>AI支援開発プラットフォーム・IDEアシスタント</p>
+                </div>
+                
+                <div class="two-columns">
+                    <div class="column">
+                        <h3>🎯 Kiroの特徴</h3>
+                        <ul>
+                            <li class="fragment"><strong>Spec駆動開発</strong><br>要件→設計→実装の流れを体系化</li>
+                            <li class="fragment"><strong>プロパティベーステスト</strong><br>従来のテスト手法を超えた品質保証</li>
+                            <li class="fragment"><strong>コード生成</strong><br>設計に基づいた実装の自動化</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>🆚 従来の開発との違い</h3>
+                        <div class="fragment">
+                            <h4>従来の開発</h4>
+                            <ul>
+                                <li>要件があいまい</li>
+                                <li>設計と実装が乖離</li>
+                                <li>テストが後回し</li>
+                            </ul>
+                        </div>
+                        <div class="fragment">
+                            <h4>Kiroを使った開発</h4>
+                            <ul>
+                                <li>構造化された要件定義</li>
+                                <li>設計から実装への一貫性</li>
+                                <li>品質を保証するテスト戦略</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- なぜKiroを選んだか -->
+            <section>
+                <h2>🤷‍♂️ なぜKiroを選んだのか？</h2>
+                
+                <div class="stats">
+                    <div class="stat-item fragment">
+                        <span class="stat-number">📋</span>
+                        <div class="stat-label">
+                            <strong>体系的なアプローチ</strong><br>
+                            単なるコード生成ではなく、開発プロセス全体をサポート
+                        </div>
+                    </div>
+                    <div class="stat-item fragment">
+                        <span class="stat-number">🔍</span>
+                        <div class="stat-label">
+                            <strong>品質重視</strong><br>
+                            プロパティベーステストで高い品質を実現
+                        </div>
+                    </div>
+                    <div class="stat-item fragment">
+                        <span class="stat-number">🎓</span>
+                        <div class="stat-label">
+                            <strong>学習効果</strong><br>
+                            AIと協働しながら開発スキルも向上
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-header fragment">
+                    <p><strong>決め手:</strong> 「正しいソフトウェアを正しく作る」という哲学に共感</p>
+                </div>
+            </section>
+            
+            <!-- 開発プロセス実演 -->
+            <section>
+                <h2>🛠️ 実際の開発プロセス</h2>
+                <h3>「Linker」- エンジニアプロフィール共有プラットフォーム</h3>
+                
+                <div class="stats">
+                    <div class="stat-item fragment">
+                        <span class="stat-number">1️⃣</span>
+                        <div class="stat-label">
+                            <strong>要件定義</strong><br>
+                            EARS形式で明確な要件を定義
+                        </div>
+                    </div>
+                    <div class="stat-item fragment">
+                        <span class="stat-number">2️⃣</span>
+                        <div class="stat-label">
+                            <strong>設計</strong><br>
+                            アーキテクチャと正確性プロパティを設計
+                        </div>
+                    </div>
+                    <div class="stat-item fragment">
+                        <span class="stat-number">3️⃣</span>
+                        <div class="stat-label">
+                            <strong>実装</strong><br>
+                            タスクベースで段階的に実装
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Spec機能の説明 -->
+            <section>
+                <h2>📋 Spec機能の威力</h2>
+                
+                <div class="two-columns">
+                    <div class="column">
+                        <h3>要件定義フェーズ</h3>
+                        <pre><code class="language-markdown">## 要件 1: アカウント登録
+
+**ユーザーストーリー:** エンジニアとして、
+アカウントを作成したいので、プロフィールを
+作成して管理できるようにしたい。
+
+#### 受け入れ基準
+1. WHEN ユーザーが登録ページにアクセスする 
+   THEN Linker SHALL メールアドレスと
+   パスワードの入力フォームを表示する</code></pre>
+                    </div>
+                    <div class="column">
+                        <h3>設計フェーズ</h3>
+                        <pre><code class="language-typescript">interface Profile {
+  id: string;
+  user_id: string;
+  name: string;
+  jobTitle: string;
+  bio?: string;
+  imageUrl?: string;
+  skills: string[];
+  yearsOfExperience?: number;
+  socialLinks: SocialLink[];
+  createdAt: string;
+  updatedAt: string;
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="section-header fragment">
+                    <p><strong>ポイント:</strong> 要件→設計→実装の一貫性をKiroが保証</p>
+                </div>
+            </section>
+            
+            <!-- プロパティベーステスト -->
+            <section>
+                <h2>🧪 プロパティベーステストの革新</h2>
+                
+                <div class="two-columns">
+                    <div class="column">
+                        <h3>従来のテスト</h3>
+                        <pre><code class="language-javascript">// 特定のケースをテスト
+test('プロフィール作成', () => {
+  const profile = createProfile({
+    name: "田中太郎",
+    jobTitle: "エンジニア"
+  });
+  expect(profile.name).toBe("田中太郎");
+});</code></pre>
+                        <p class="fragment">❌ 限定的なケースのみ</p>
+                    </div>
+                    <div class="column">
+                        <h3>プロパティベーステスト</h3>
+                        <pre><code class="language-javascript">// 普遍的な性質をテスト
+property('プロフィール作成の一貫性', 
+  fc.record({
+    name: fc.string(),
+    jobTitle: fc.string()
+  }), (data) => {
+    const profile = createProfile(data);
+    return profile.name === data.name &&
+           profile.jobTitle === data.jobTitle;
+  });</code></pre>
+                        <p class="fragment">✅ 100回以上のランダムテスト</p>
+                    </div>
+                </div>
+                
+                <div class="section-header fragment">
+                    <p><strong>結果:</strong> より多くのバグを発見し、高い品質を実現</p>
+                </div>
+            </section>
+            
+            <!-- 開発成果 -->
+            <section>
+                <h2>🎉 開発成果 - Linkerアプリ</h2>
+                
+                <div class="two-columns">
+                    <div class="column">
+                        <h3>📊 開発統計</h3>
+                        <div class="stats">
+                            <div class="stat-item">
+                                <span class="stat-number">83</span>
+                                <div class="stat-label">TypeScriptファイル</div>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">10,933</span>
+                                <div class="stat-label">総コード行数</div>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">28</span>
+                                <div class="stat-label">テストファイル</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <h3>⚡ 開発効率の向上</h3>
+                        <ul>
+                            <li class="fragment">📅 <strong>開発期間:</strong> 約2週間</li>
+                            <li class="fragment">🚀 <strong>従来比:</strong> 30-40%の時間短縮</li>
+                            <li class="fragment">🐛 <strong>バグ発見:</strong> 早期段階で品質問題を特定</li>
+                            <li class="fragment">📝 <strong>ドキュメント:</strong> 要件と実装の一貫性を維持</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 技術スタックと機能 -->
+            <section>
+                <h2>🛠️ 完成したLinkerの技術スタック</h2>
+                
+                <div class="two-columns">
+                    <div class="column">
+                        <h3>フロントエンド</h3>
+                        <ul>
+                            <li>⚛️ React 19 + TypeScript</li>
+                            <li>🛣️ React Router v7</li>
+                            <li>🎨 レスポンシブUI</li>
+                            <li>⚡ Vite (高速ビルド)</li>
+                        </ul>
+                        
+                        <h3>バックエンド</h3>
+                        <ul>
+                            <li>🗄️ Supabase (PostgreSQL)</li>
+                            <li>🔐 Supabase Auth</li>
+                            <li>🛡️ Row Level Security (RLS)</li>
+                            <li>📁 Supabase Storage</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>🎯 実装された主要機能</h3>
+                        <ul>
+                            <li class="fragment">🔐 アカウント登録・ログイン</li>
+                            <li class="fragment">👤 プロフィール作成・編集・削除</li>
+                            <li class="fragment">🖼️ 画像アップロード (5MB制限)</li>
+                            <li class="fragment">🔗 SNSリンク管理</li>
+                            <li class="fragment">📤 共有可能なURL生成</li>
+                            <li class="fragment">📱 レスポンシブデザイン</li>
+                            <li class="fragment">🔒 所有者制御 (RLS)</li>
+                        </ul>
+                        
+                        <div class="section-header fragment">
+                            <p><strong>すべての機能が要件通りに実装完了！</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 品質向上の成果 -->
+            <section>
+                <h2>📈 品質向上の具体的成果</h2>
+                
+                <div class="stats">
+                    <div class="stat-item fragment">
+                        <span class="stat-number">🧪</span>
+                        <div class="stat-label">
+                            <strong>プロパティベーステスト</strong><br>
+                            15個のプロパティで包括的テスト<br>
+                            各プロパティ100回以上実行
+                        </div>
+                    </div>
+                    <div class="stat-item fragment">
+                        <span class="stat-number">✅</span>
+                        <div class="stat-label">
+                            <strong>テストカバレッジ</strong><br>
+                            90%以上の高いカバレッジ<br>
+                            ユニット + プロパティテスト
+                        </div>
+                    </div>
+                    <div class="stat-item fragment">
+                        <span class="stat-number">🎯</span>
+                        <div class="stat-label">
+                            <strong>要件トレーサビリティ</strong><br>
+                            すべての機能が要件と紐付け<br>
+                            設計→実装の一貫性を保証
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="two-columns fragment">
+                    <div class="column">
+                        <h3>🔍 発見できたバグの例</h3>
+                        <ul>
+                            <li>プロフィール画像の削除処理の不備</li>
+                            <li>SNSリンクのバリデーション漏れ</li>
+                            <li>エッジケースでの状態管理エラー</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>💡 Kiroの支援効果</h3>
+                        <ul>
+                            <li>要件の曖昧さを早期発見</li>
+                            <li>設計の一貫性チェック</li>
+                            <li>テスト戦略の体系化</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- ライブデモ -->
+            <section>
+                <h2>🎬 ライブデモ</h2>
+                <h3>実際のLinkerアプリを見てみましょう！</h3>
+                
+                <div class="section-header">
+                    <p>デモシナリオ: ユーザー登録 → プロフィール作成 → 共有</p>
+                </div>
+                
+                <div class="two-columns">
+                    <div class="column">
+                        <h3>🎯 デモの流れ</h3>
+                        <ol>
+                            <li class="fragment">アカウント登録</li>
+                            <li class="fragment">プロフィール情報入力</li>
+                            <li class="fragment">画像アップロード</li>
+                            <li class="fragment">SNSリンク追加</li>
+                            <li class="fragment">プロフィール表示確認</li>
+                            <li class="fragment">共有URL生成</li>
+                        </ol>
+                    </div>
+                    <div class="column">
+                        <h3>🔗 アクセス方法</h3>
+                        <div class="section-header">
+                            <p><strong>Linkerアプリ:</strong><br>
+                            <a href="http://localhost:5173" target="_blank" class="btn">
+                                http://localhost:5173
+                            </a></p>
+                        </div>
+                        
+                        <div class="fragment">
+                            <h4>📱 動作確認済み環境</h4>
+                            <ul>
+                                <li>Chrome, Firefox, Safari, Edge</li>
+                                <li>デスクトップ・モバイル対応</li>
+                                <li>レスポンシブデザイン</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-header fragment">
+                    <p><strong>注:</strong> デモが失敗した場合は、次のスライドで画面キャプチャをご覧ください</p>
+                </div>
+            </section>
+            
+            <!-- デモ代替コンテンツ -->
+            <section>
+                <h2>📸 Linkerアプリ画面紹介</h2>
+                <p><small>（デモ代替コンテンツ）</small></p>
+                
+                <div class="two-columns">
+                    <div class="column">
+                        <h3>🏠 ホームページ</h3>
+                        <div class="section-header">
+                            <p>シンプルで分かりやすいランディングページ</p>
+                        </div>
+                        
+                        <h3>📝 プロフィール作成フォーム</h3>
+                        <div class="section-header">
+                            <p>直感的な入力フォーム<br>
+                            リアルタイムバリデーション</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <h3>👤 プロフィール表示</h3>
+                        <div class="section-header">
+                            <p>名刺風の美しいレイアウト<br>
+                            SNSリンクも統合表示</p>
+                        </div>
+                        
+                        <h3>🔐 認証システム</h3>
+                        <div class="section-header">
+                            <p>Supabase Authによる<br>
+                            安全なログイン・登録</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-header fragment">
+                    <p><strong>実際の画面:</strong> 発表後にぜひアクセスしてお試しください！</p>
+                </div>
+            </section>
+            
+            <!-- 学びと気づき -->
+            <section>
+                <h2>🎓 開発を通じて得た学び</h2>
+                
+                <div class="two-columns">
+                    <div class="column">
+                        <h3>✅ AI支援開発の利点</h3>
+                        <ul>
+                            <li class="fragment"><strong>🚀 開発速度の向上</strong><br>
+                            要件→設計→実装の流れが体系化され、迷いが減少</li>
+                            <li class="fragment"><strong>📋 品質の向上</strong><br>
+                            プロパティベーステストで従来見つからないバグを発見</li>
+                            <li class="fragment"><strong>📚 学習効果</strong><br>
+                            AIとの協働で開発手法やベストプラクティスを習得</li>
+                            <li class="fragment"><strong>🔄 一貫性の保証</strong><br>
+                            要件と実装の乖離を防ぎ、トレーサビリティを確保</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>⚠️ 課題と注意点</h3>
+                        <ul>
+                            <li class="fragment"><strong>🤔 初期学習コスト</strong><br>
+                            新しい開発手法に慣れるまで時間が必要</li>
+                            <li class="fragment"><strong>🎯 要件定義の重要性</strong><br>
+                            曖昧な要件では効果が半減、明確化が必須</li>
+                            <li class="fragment"><strong>🔧 ツール依存</strong><br>
+                            AIツールの特性を理解して適切に活用する必要</li>
+                            <li class="fragment"><strong>👥 チーム導入</strong><br>
+                            個人開発と異なり、チーム全体での理解が重要</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="callout success fragment">
+                    <p><strong>最大の学び:</strong> AIは「魔法の杖」ではなく、「優秀なペアプログラミングパートナー」</p>
+                </div>
+            </section>
+            
+            <!-- 今後の展望 -->
+            <section>
+                <h2>🔮 AI支援開発の今後の可能性</h2>
+                
+                <div class="stats">
+                    <div class="stat-item fragment">
+                        <span class="stat-number">🏢</span>
+                        <div class="stat-label">
+                            <strong>エンタープライズ導入</strong><br>
+                            大規模プロジェクトでの<br>
+                            品質向上と効率化
+                        </div>
+                    </div>
+                    <div class="stat-item fragment">
+                        <span class="stat-number">🎓</span>
+                        <div class="stat-label">
+                            <strong>教育分野への応用</strong><br>
+                            プログラミング学習の<br>
+                            新しいアプローチ
+                        </div>
+                    </div>
+                    <div class="stat-item fragment">
+                        <span class="stat-number">🤝</span>
+                        <div class="stat-label">
+                            <strong>チーム開発の進化</strong><br>
+                            AIを含めた新しい<br>
+                            協働スタイルの確立
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="two-columns fragment">
+                    <div class="column">
+                        <h3>🚀 技術的な進歩</h3>
+                        <ul>
+                            <li>より高度なコード生成</li>
+                            <li>リアルタイムコードレビュー</li>
+                            <li>自動テスト生成の精度向上</li>
+                            <li>設計パターンの自動提案</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>🌍 開発文化の変化</h3>
+                        <ul>
+                            <li>品質重視の開発プロセス</li>
+                            <li>ドキュメント駆動開発の普及</li>
+                            <li>継続的学習の重要性増大</li>
+                            <li>人間とAIの役割分担の明確化</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Kiroの可能性 -->
+            <section>
+                <h2>🌟 Kiroが切り開く未来</h2>
+                
+                <div class="section-header">
+                    <p>「正しいソフトウェアを正しく作る」を実現するプラットフォーム</p>
+                </div>
+                
+                <div class="two-columns">
+                    <div class="column">
+                        <h3>🎯 開発者への影響</h3>
+                        <div class="callout fragment">
+                            <p><strong>スキル向上:</strong> AIとの協働で、より高度な開発スキルを習得</p>
+                        </div>
+                        <div class="callout success fragment">
+                            <p><strong>創造性の解放:</strong> 単純作業から解放され、創造的な部分に集中</p>
+                        </div>
+                        <div class="callout warning fragment">
+                            <p><strong>継続学習:</strong> 進化するAI技術に合わせた学習が必要</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <h3>🏭 業界への影響</h3>
+                        <div class="callout fragment">
+                            <p><strong>品質標準の向上:</strong> プロパティベーステストが標準的な手法に</p>
+                        </div>
+                        <div class="callout success fragment">
+                            <p><strong>開発効率の革命:</strong> 従来の2-3倍の開発速度を実現</p>
+                        </div>
+                        <div class="callout warning fragment">
+                            <p><strong>人材要件の変化:</strong> AI協働スキルが必須要件に</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-header fragment">
+                    <p class="gradient-text"><strong>Kiroは単なるツールではなく、開発の未来を形作るプラットフォーム</strong></p>
+                </div>
+            </section>
+            
+            <!-- まとめ -->
+            <section>
+                <h2>🎯 まとめ</h2>
+                
+                <div class="stats">
+                    <div class="stat-item fragment">
+                        <span class="stat-number">🚀</span>
+                        <div class="stat-label">
+                            <strong>開発効率</strong><br>
+                            30-40%の時間短縮を実現<br>
+                            要件→実装の一貫性
+                        </div>
+                    </div>
+                    <div class="stat-item fragment">
+                        <span class="stat-number">🎯</span>
+                        <div class="stat-label">
+                            <strong>品質向上</strong><br>
+                            プロパティベーステスト<br>
+                            90%以上のカバレッジ
+                        </div>
+                    </div>
+                    <div class="stat-item fragment">
+                        <span class="stat-number">💡</span>
+                        <div class="stat-label">
+                            <strong>学習効果</strong><br>
+                            AIとの協働で<br>
+                            スキル向上を実現
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="two-columns fragment">
+                    <div class="column">
+                        <h3>🎉 今日の成果</h3>
+                        <ul>
+                            <li>✅ AWS re:Inventから始まった探求の旅</li>
+                            <li>✅ Kiroを使った実際の開発体験</li>
+                            <li>✅ 具体的な成果と数値での効果検証</li>
+                            <li>✅ AI支援開発の可能性と課題の共有</li>
+                        </ul>
+                    </div>
+                    <div class="column">
+                        <h3>🚀 次のアクション</h3>
+                        <ul>
+                            <li class="fragment">🔍 Kiroを実際に試してみる</li>
+                            <li class="fragment">📚 プロパティベーステストを学ぶ</li>
+                            <li class="fragment">🤝 チームでAI支援開発を検討</li>
+                            <li class="fragment">🌟 新しい開発手法にチャレンジ</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="section-header fragment">
+                    <p><strong>AI支援開発は未来ではなく、今ここにある現実です！</strong></p>
+                </div>
+            </section>
+            
+            <!-- 質疑応答 -->
+            <section>
+                <h2>❓ 質疑応答</h2>
+                
+                <div class="section-header">
+                    <p>ご質問をお待ちしています！</p>
+                </div>
+                
+                <div class="two-columns">
+                    <div class="column">
+                        <h3>🤔 よくある質問</h3>
+                        <div class="callout fragment">
+                            <p><strong>Q: Kiroの学習コストは？</strong><br>
+                            A: 基本操作は1-2週間、効果的活用は1-2ヶ月程度</p>
+                        </div>
+                        <div class="callout fragment">
+                            <p><strong>Q: 既存プロジェクトに導入可能？</strong><br>
+                            A: 段階的導入が可能、新機能から始めるのがおすすめ</p>
+                        </div>
+                        <div class="callout fragment">
+                            <p><strong>Q: チーム開発での効果は？</strong><br>
+                            A: 要件の共通理解が向上、コードレビューが効率化</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <h3>🔗 リソース</h3>
+                        <div class="section-header fragment">
+                            <p><strong>Linkerアプリ（デモ）:</strong><br>
+                            <a href="http://localhost:5173" target="_blank" class="btn">
+                                localhost:5173
+                            </a></p>
+                        </div>
+                        
+                        <div class="section-header fragment">
+                            <p><strong>今日のスライド:</strong><br>
+                            発表後に共有予定</p>
+                        </div>
+                        
+                        <div class="callout success fragment">
+                            <p><strong>💬 お気軽にお声がけください！</strong><br>
+                            AI支援開発について、もっと詳しくお話ししましょう</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 感謝スライド -->
+            <section class="title-slide" data-background-color="#2563eb">
+                <h1>ありがとうございました！</h1>
+                <p>🤖 AI支援開発の可能性を一緒に探求しましょう</p>
+                <br>
+                <div class="fragment">
+                    <p>
+                        <strong>「Kiroでアプリを作ってみた。」</strong><br>
+                        <small>〜 AWS re:Invent 2025 から始まった開発の旅 〜</small>
+                    </p>
+                </div>
+                <br>
+                <div class="fragment">
+                    <p>
+                        <small>2025年12月16日 ライトニングトーク</small>
+                    </p>
+                </div>
+            </section>
+            
+        </div>
+    </div>
+
+    <!-- Reveal.js JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/plugin/notes/notes.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/plugin/markdown/markdown.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.4/plugin/highlight/highlight.js"></script>
+    
+    <!-- Prism.js for syntax highlighting -->
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="js/presentation.js"></script>
+</body>
+</html>

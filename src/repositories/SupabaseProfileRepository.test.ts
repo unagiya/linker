@@ -23,6 +23,7 @@ describe('SupabaseProfileRepository', () => {
   const mockProfile: Profile = {
     id: 'profile-123',
     user_id: 'user-123',
+    nickname: 'yamada-taro',
     name: '山田太郎',
     jobTitle: 'フロントエンドエンジニア',
     bio: 'Reactが得意です',
@@ -43,6 +44,7 @@ describe('SupabaseProfileRepository', () => {
   const mockProfileRow = {
     id: 'profile-123',
     user_id: 'user-123',
+    nickname: 'yamada-taro',
     name: '山田太郎',
     job_title: 'フロントエンドエンジニア',
     bio: 'Reactが得意です',
@@ -203,6 +205,63 @@ describe('SupabaseProfileRepository', () => {
       });
 
       const result = await repository.findByUserId('nonexistent');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findByNickname', () => {
+    it('ニックネームでプロフィールを取得する', async () => {
+      const mockSelect = vi.fn().mockReturnThis();
+      const mockEq = vi.fn().mockReturnThis();
+      const mockSingle = vi.fn().mockResolvedValue({
+        data: mockProfileRow,
+        error: null,
+      });
+
+      vi.mocked(supabase.from).mockReturnValue({
+        select: mockSelect,
+        eq: mockEq,
+        single: mockSingle,
+      } as any);
+
+      mockSelect.mockReturnValue({
+        eq: mockEq,
+      });
+
+      mockEq.mockReturnValue({
+        single: mockSingle,
+      });
+
+      const result = await repository.findByNickname('yamada-taro');
+
+      expect(result).toEqual(mockProfile);
+      expect(mockEq).toHaveBeenCalledWith('nickname', 'yamada-taro');
+    });
+
+    it('ニックネームが見つからない場合、nullを返す', async () => {
+      const mockSelect = vi.fn().mockReturnThis();
+      const mockEq = vi.fn().mockReturnThis();
+      const mockSingle = vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: 'PGRST116', message: 'Not found' },
+      });
+
+      vi.mocked(supabase.from).mockReturnValue({
+        select: mockSelect,
+        eq: mockEq,
+        single: mockSingle,
+      } as any);
+
+      mockSelect.mockReturnValue({
+        eq: mockEq,
+      });
+
+      mockEq.mockReturnValue({
+        single: mockSingle,
+      });
+
+      const result = await repository.findByNickname('nonexistent');
 
       expect(result).toBeNull();
     });

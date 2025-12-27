@@ -14,6 +14,8 @@ export interface ProfileRow {
   id: string;
   /** 所有者のユーザーID（Supabase Auth） */
   user_id: string;
+  /** ニックネーム（URL用の一意の識別子） */
+  nickname: string;
   /** 名前（必須） */
   name: string;
   /** 職種（必須） */
@@ -42,6 +44,8 @@ export interface ProfileInsert {
   id?: string;
   /** 所有者のユーザーID（Supabase Auth） */
   user_id: string;
+  /** ニックネーム（URL用の一意の識別子） */
+  nickname: string;
   /** 名前（必須） */
   name: string;
   /** 職種（必須） */
@@ -66,6 +70,8 @@ export interface ProfileInsert {
  * profilesテーブルの更新データ型
  */
 export interface ProfileUpdate {
+  /** ニックネーム */
+  nickname?: string;
   /** 名前 */
   name?: string;
   /** 職種 */

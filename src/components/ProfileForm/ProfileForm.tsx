@@ -36,6 +36,7 @@ export function ProfileForm({
   error = null,
 }: ProfileFormProps) {
   // フォームの状態
+  const [nickname, setNickname] = useState(initialData?.nickname || '');
   const [name, setName] = useState(initialData?.name || '');
   const [jobTitle, setJobTitle] = useState(initialData?.jobTitle || '');
   const [bio, setBio] = useState(initialData?.bio || '');
@@ -128,6 +129,7 @@ export function ProfileForm({
     e.preventDefault();
 
     const formData: ProfileFormData = {
+      nickname,
       name,
       jobTitle,
       bio,

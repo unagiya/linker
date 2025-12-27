@@ -23,6 +23,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     if (existing) {
       // 更新
       const updateData: ProfileUpdate = {
+        nickname: profile.nickname,
         name: profile.name,
         job_title: profile.jobTitle,
         bio: profile.bio || null,
@@ -43,6 +44,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
       const insertData: ProfileInsert = {
         id: profile.id,
         user_id: profile.user_id,
+        nickname: profile.nickname,
         name: profile.name,
         job_title: profile.jobTitle,
         bio: profile.bio || null,
@@ -101,6 +103,27 @@ export class SupabaseProfileRepository implements ProfileRepository {
   }
 
   /**
+   * ニックネームでプロフィールを検索する
+   */
+  async findByNickname(nickname: string): Promise<Profile | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('nickname', nickname)
+      .single();
+
+    if (error) {
+      // PGRST116は「行が見つからない」エラー
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw new Error(`プロフィールの取得に失敗しました: ${error.message}`);
+    }
+
+    return this.mapToProfile(data);
+  }
+
+  /**
    * すべてのプロフィールを取得する
    */
   async findAll(): Promise<Profile[]> {
@@ -145,6 +168,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     return {
       id: data.id,
       user_id: data.user_id,
+      nickname: data.nickname,
       name: data.name,
       jobTitle: data.job_title,
       bio: data.bio || undefined,

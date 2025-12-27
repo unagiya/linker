@@ -44,6 +44,8 @@ export interface Profile {
   id: string;
   /** 所有者のユーザーID（Supabase Auth） */
   user_id: string;
+  /** ニックネーム（URL用の一意の識別子） */
+  nickname: string;
   /** 名前（必須） */
   name: string;
   /** 職種（必須） */
@@ -69,6 +71,8 @@ export interface Profile {
  * フォームでは経験年数を文字列として扱う
  */
 export interface ProfileFormData {
+  /** ニックネーム（URL用の一意の識別子） */
+  nickname: string;
   name: string;
   jobTitle: string;
   bio: string;

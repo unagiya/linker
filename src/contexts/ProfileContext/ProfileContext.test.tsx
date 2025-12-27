@@ -18,6 +18,7 @@ describe('ProfileContext', () => {
       save: vi.fn(),
       findById: vi.fn(),
       findByUserId: vi.fn(),
+      findByNickname: vi.fn(),
       findAll: vi.fn(),
       delete: vi.fn(),
       exists: vi.fn(),
@@ -51,6 +52,7 @@ describe('ProfileContext', () => {
       });
 
       const formData = {
+        nickname: 'yamada-taro',
         name: '山田太郎',
         jobTitle: 'フロントエンドエンジニア',
         bio: 'Reactが得意です',
@@ -92,6 +94,7 @@ describe('ProfileContext', () => {
       });
 
       const formData = {
+        nickname: 'yamada-taro-2',
         name: '山田太郎',
         jobTitle: 'エンジニア',
         bio: '',
@@ -118,6 +121,7 @@ describe('ProfileContext', () => {
       });
 
       const formData = {
+        nickname: 'yamada-taro-3',
         name: '山田太郎',
         jobTitle: 'エンジニア',
         bio: '',
@@ -145,6 +149,7 @@ describe('ProfileContext', () => {
       const existingProfile: Profile = {
         id: 'profile-123',
         user_id: 'user-123',
+        nickname: 'yamada-taro-existing',
         name: '山田太郎',
         jobTitle: 'エンジニア',
         skills: [],
@@ -161,6 +166,7 @@ describe('ProfileContext', () => {
       });
 
       const formData = {
+        nickname: 'yamada-hanako',
         name: '山田花子',
         jobTitle: 'シニアエンジニア',
         bio: '更新されました',
@@ -194,6 +200,7 @@ describe('ProfileContext', () => {
       });
 
       const formData = {
+        nickname: 'yamada-taro-4',
         name: '山田太郎',
         jobTitle: 'エンジニア',
         bio: '',
@@ -218,6 +225,7 @@ describe('ProfileContext', () => {
       const existingProfile: Profile = {
         id: 'profile-123',
         user_id: 'user-123',
+        nickname: 'yamada-taro-existing-2',
         name: '山田太郎',
         jobTitle: 'エンジニア',
         skills: [],
@@ -234,6 +242,7 @@ describe('ProfileContext', () => {
       });
 
       const formData = {
+        nickname: 'yamada-taro-5',
         name: '山田太郎',
         jobTitle: 'エンジニア',
         bio: '',
@@ -297,6 +306,7 @@ describe('ProfileContext', () => {
       const mockProfile: Profile = {
         id: 'profile-123',
         user_id: 'user-123',
+        nickname: 'yamada-taro-mock',
         name: '山田太郎',
         jobTitle: 'エンジニア',
         skills: [],
@@ -365,6 +375,7 @@ describe('ProfileContext', () => {
       const mockProfile: Profile = {
         id: 'profile-123',
         user_id: 'user-123',
+        nickname: 'yamada-taro-my',
         name: '山田太郎',
         jobTitle: 'エンジニア',
         skills: [],

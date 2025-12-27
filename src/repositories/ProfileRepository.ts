@@ -45,6 +45,15 @@ export interface ProfileRepository {
   findByUserId(userId: string): Promise<Profile | null>;
 
   /**
+   * ニックネームでプロフィールを検索する
+   *
+   * @param nickname - ニックネーム
+   * @returns プロフィール、見つからない場合はnull
+   * @throws エラーが発生した場合
+   */
+  findByNickname(nickname: string): Promise<Profile | null>;
+
+  /**
    * すべてのプロフィールを取得する
    *
    * @returns プロフィールの配列

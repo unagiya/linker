@@ -13,6 +13,7 @@ describe('LocalStorageRepository', () => {
   const createTestProfile = (id: string): Profile => ({
     id,
     user_id: 'test-user-id',
+    nickname: `test-nickname-${id}`,
     name: 'テストユーザー',
     jobTitle: 'ソフトウェアエンジニア',
     bio: 'テスト用のプロフィールです',
