@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import { validateNickname } from './nicknameValidation';
 
 /**
  * アカウント登録用のバリデーションスキーマ
@@ -17,6 +18,12 @@ export const signUpSchema = z.object({
     .string()
     .min(6, 'パスワードは6文字以上で入力してください')
     .max(100, 'パスワードは100文字以内で入力してください'),
+  nickname: z
+    .string()
+    .min(1, 'ニックネームは必須です')
+    .refine((value) => validateNickname(value).isValid, {
+      message: 'ニックネームの形式が正しくありません'
+    }),
 });
 
 /**

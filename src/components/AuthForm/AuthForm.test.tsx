@@ -6,6 +6,29 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AuthForm } from './AuthForm';
 
+// NicknameInputコンポーネントをモック
+vi.mock('../NicknameInput', () => ({
+  NicknameInput: ({ value, onChange, onValidationChange, error, ...props }: any) => (
+    <div>
+      <label htmlFor="nickname">ニックネーム</label>
+      <input
+        id="nickname"
+        type="text"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          // 簡単なバリデーション（3文字以上で有効とする）
+          if (onValidationChange) {
+            onValidationChange(e.target.value.length >= 3);
+          }
+        }}
+        {...props}
+      />
+      {error && <span role="alert">{error}</span>}
+    </div>
+  )
+}));
+
 describe('AuthForm', () => {
   describe('signup モード', () => {
     it('登録フォームが表示される', () => {
@@ -16,6 +39,7 @@ describe('AuthForm', () => {
       expect(screen.getByText('アカウント登録')).toBeInTheDocument();
       expect(screen.getByLabelText(/メールアドレス/)).toBeInTheDocument();
       expect(screen.getByLabelText(/パスワード/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/ニックネーム/)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '登録' })).toBeInTheDocument();
     });
 
@@ -26,14 +50,16 @@ describe('AuthForm', () => {
 
       const emailInput = screen.getByLabelText(/メールアドレス/);
       const passwordInput = screen.getByLabelText(/パスワード/);
+      const nicknameInput = screen.getByLabelText(/ニックネーム/);
       const submitButton = screen.getByRole('button', { name: '登録' });
 
       fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
       fireEvent.change(passwordInput, { target: { value: 'password123' } });
+      fireEvent.change(nicknameInput, { target: { value: 'test-user' } });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(mockOnSubmit).toHaveBeenCalledWith('test@example.com', 'password123');
+        expect(mockOnSubmit).toHaveBeenCalledWith('test@example.com', 'password123', 'test-user');
       });
     });
 
@@ -64,14 +90,38 @@ describe('AuthForm', () => {
 
       const emailInput = screen.getByLabelText(/メールアドレス/);
       const passwordInput = screen.getByLabelText(/パスワード/);
+      const nicknameInput = screen.getByLabelText(/ニックネーム/);
       const submitButton = screen.getByRole('button', { name: '登録' });
 
       fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
       fireEvent.change(passwordInput, { target: { value: '12345' } });
+      fireEvent.change(nicknameInput, { target: { value: 'test-user' } });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
         expect(screen.getByText(/パスワードは6文字以上で入力してください/)).toBeInTheDocument();
+      });
+
+      expect(mockOnSubmit).not.toHaveBeenCalled();
+    });
+
+    it('ニックネームが無効な場合、送信が阻止される', async () => {
+      const mockOnSubmit = vi.fn();
+
+      render(<AuthForm mode="signup" onSubmit={mockOnSubmit} />);
+
+      const emailInput = screen.getByLabelText(/メールアドレス/);
+      const passwordInput = screen.getByLabelText(/パスワード/);
+      const nicknameInput = screen.getByLabelText(/ニックネーム/);
+      const submitButton = screen.getByRole('button', { name: '登録' });
+
+      fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+      fireEvent.change(passwordInput, { target: { value: 'password123' } });
+      fireEvent.change(nicknameInput, { target: { value: 'ab' } }); // 短すぎるニックネーム
+      fireEvent.click(submitButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/ニックネームの形式が正しくありません/)).toBeInTheDocument();
       });
 
       expect(mockOnSubmit).not.toHaveBeenCalled();
@@ -101,6 +151,7 @@ describe('AuthForm', () => {
       expect(screen.getByRole('heading', { name: 'ログイン' })).toBeInTheDocument();
       expect(screen.getByLabelText(/メールアドレス/)).toBeInTheDocument();
       expect(screen.getByLabelText(/パスワード/)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/ニックネーム/)).not.toBeInTheDocument(); // ログイン時はニックネーム不要
       expect(screen.getByRole('button', { name: 'ログイン' })).toBeInTheDocument();
     });
 
@@ -118,7 +169,7 @@ describe('AuthForm', () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(mockOnSubmit).toHaveBeenCalledWith('test@example.com', 'password123');
+        expect(mockOnSubmit).toHaveBeenCalledWith('test@example.com', 'password123', undefined);
       });
     });
 
@@ -145,10 +196,12 @@ describe('AuthForm', () => {
 
       const emailInput = screen.getByLabelText(/メールアドレス/);
       const passwordInput = screen.getByLabelText(/パスワード/);
+      const nicknameInput = screen.getByLabelText(/ニックネーム/);
       const submitButton = screen.getByRole('button', { name: '処理中...' });
 
       expect(emailInput).toBeDisabled();
       expect(passwordInput).toBeDisabled();
+      expect(nicknameInput).toBeDisabled();
       expect(submitButton).toBeDisabled();
     });
   });
