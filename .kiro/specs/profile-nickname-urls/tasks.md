@@ -108,7 +108,7 @@
   - **プロパティ18: ニックネーム変更時のリアルタイムチェック**
   - **検証: 要件 4.2**
 
-- [ ] 5. NicknameInputコンポーネントの実装
+- [x] 5. NicknameInputコンポーネントの実装
   - NicknameInputコンポーネントの作成
   - リアルタイムバリデーション機能
   - useNicknameCheckフックとの統合
@@ -140,7 +140,7 @@
   - **プロパティ33: ヘルプテキストの表示**
   - **検証: 要件 9.4**
 
-- [ ] 6. NicknameAvailabilityコンポーネントの実装
+- [x] 6. NicknameAvailabilityコンポーネントの実装
   - NicknameAvailabilityコンポーネントの作成
   - 状態に応じたアイコン表示（チェック、X、ローディング）
   - 色分けされたメッセージ表示

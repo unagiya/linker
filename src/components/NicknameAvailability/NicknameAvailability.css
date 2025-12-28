@@ -1,0 +1,101 @@
+/**
+ * NicknameAvailabilityコンポーネントのスタイル
+ */
+
+.nickname-availability {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.nickname-availability-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.nickname-availability-icon--loading {
+  color: #6b7280;
+}
+
+.nickname-availability-icon--success {
+  color: #10b981;
+}
+
+.nickname-availability-icon--error {
+  color: #ef4444;
+}
+
+.nickname-availability-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #6b7280;
+  border-radius: 50%;
+  animation: nickname-availability-spin 1s linear infinite;
+}
+
+@keyframes nickname-availability-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.nickname-availability-text {
+  flex: 1;
+}
+
+.nickname-availability-message--checking {
+  color: #6b7280;
+}
+
+.nickname-availability-message--success {
+  color: #10b981;
+}
+
+.nickname-availability-message--error {
+  color: #ef4444;
+}
+
+/* コンパクトバリアント */
+.nickname-availability--compact {
+  font-size: 0.75rem;
+  gap: 0.25rem;
+}
+
+.nickname-availability--compact .nickname-availability-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.nickname-availability--compact .nickname-availability-spinner {
+  width: 12px;
+  height: 12px;
+  border-width: 1.5px;
+}
+
+/* インラインバリアント */
+.nickname-availability--inline {
+  display: inline-flex;
+}
+
+/* アクセシビリティ対応 */
+@media (prefers-reduced-motion: reduce) {
+  .nickname-availability-spinner {
+    animation: none;
+  }
+  
+  /* 代替として点滅アニメーション */
+  .nickname-availability-icon--loading {
+    animation: nickname-availability-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes nickname-availability-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
