@@ -7,6 +7,29 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ProfileForm } from './ProfileForm';
 import type { ProfileFormData } from '../../types/profile';
 
+// NicknameInputコンポーネントをモック
+vi.mock('../NicknameInput', () => ({
+  NicknameInput: ({ value, onChange, onValidationChange, error, currentNickname, ...props }: any) => (
+    <div>
+      <label htmlFor="nickname">ニックネーム</label>
+      <input
+        id="nickname"
+        type="text"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          // 簡単なバリデーション（3文字以上で有効とする）
+          if (onValidationChange) {
+            onValidationChange(e.target.value.length >= 3);
+          }
+        }}
+        {...props}
+      />
+      {error && <span role="alert">{error}</span>}
+    </div>
+  )
+}));
+
 describe('ProfileForm', () => {
   describe('基本表示', () => {
     it('プロフィール作成フォームが表示される', () => {
@@ -15,6 +38,7 @@ describe('ProfileForm', () => {
       render(<ProfileForm onSubmit={mockOnSubmit} />);
 
       expect(screen.getByText('プロフィール作成')).toBeInTheDocument();
+      expect(screen.getByLabelText(/ニックネーム/)).toBeInTheDocument();
       expect(screen.getByLabelText(/名前/)).toBeInTheDocument();
       expect(screen.getByLabelText(/職種/)).toBeInTheDocument();
       expect(screen.getByLabelText(/自己紹介/)).toBeInTheDocument();
@@ -25,6 +49,7 @@ describe('ProfileForm', () => {
     it('初期データがある場合、編集フォームとして表示される', () => {
       const mockOnSubmit = vi.fn();
       const initialData: Partial<ProfileFormData> = {
+        nickname: 'test-user',
         name: '山田太郎',
         jobTitle: 'フロントエンドエンジニア',
         bio: 'Reactが得意です',
@@ -36,6 +61,7 @@ describe('ProfileForm', () => {
       render(<ProfileForm onSubmit={mockOnSubmit} initialData={initialData} />);
 
       expect(screen.getByText('プロフィール編集')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('test-user')).toBeInTheDocument();
       expect(screen.getByDisplayValue('山田太郎')).toBeInTheDocument();
       expect(screen.getByDisplayValue('フロントエンドエンジニア')).toBeInTheDocument();
       expect(screen.getByDisplayValue('Reactが得意です')).toBeInTheDocument();
@@ -49,10 +75,12 @@ describe('ProfileForm', () => {
 
       render(<ProfileForm onSubmit={mockOnSubmit} />);
 
+      const nicknameInput = screen.getByLabelText(/ニックネーム/);
       const nameInput = screen.getByLabelText(/名前/);
       const jobTitleInput = screen.getByLabelText(/職種/);
       const submitButton = screen.getByRole('button', { name: '保存' });
 
+      fireEvent.change(nicknameInput, { target: { value: 'test-user' } });
       fireEvent.change(nameInput, { target: { value: '山田太郎' } });
       fireEvent.change(jobTitleInput, {
         target: { value: 'フロントエンドエンジニア' },
@@ -61,6 +89,7 @@ describe('ProfileForm', () => {
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith({
+          nickname: 'test-user',
           name: '山田太郎',
           jobTitle: 'フロントエンドエンジニア',
           bio: '',
@@ -79,9 +108,11 @@ describe('ProfileForm', () => {
 
       render(<ProfileForm onSubmit={mockOnSubmit} />);
 
+      const nicknameInput = screen.getByLabelText(/ニックネーム/);
       const jobTitleInput = screen.getByLabelText(/職種/);
       const submitButton = screen.getByRole('button', { name: '保存' });
 
+      fireEvent.change(nicknameInput, { target: { value: 'test-user' } });
       fireEvent.change(jobTitleInput, {
         target: { value: 'フロントエンドエンジニア' },
       });
@@ -99,14 +130,38 @@ describe('ProfileForm', () => {
 
       render(<ProfileForm onSubmit={mockOnSubmit} />);
 
+      const nicknameInput = screen.getByLabelText(/ニックネーム/);
       const nameInput = screen.getByLabelText(/名前/);
       const submitButton = screen.getByRole('button', { name: '保存' });
 
+      fireEvent.change(nicknameInput, { target: { value: 'test-user' } });
       fireEvent.change(nameInput, { target: { value: '山田太郎' } });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
         expect(screen.getByText(/職種は必須です/)).toBeInTheDocument();
+      });
+
+      expect(mockOnSubmit).not.toHaveBeenCalled();
+    });
+
+    it('ニックネームが無効な場合、送信が阻止される', async () => {
+      const mockOnSubmit = vi.fn();
+
+      render(<ProfileForm onSubmit={mockOnSubmit} />);
+
+      const nicknameInput = screen.getByLabelText(/ニックネーム/);
+      const nameInput = screen.getByLabelText(/名前/);
+      const jobTitleInput = screen.getByLabelText(/職種/);
+      const submitButton = screen.getByRole('button', { name: '保存' });
+
+      fireEvent.change(nicknameInput, { target: { value: 'ab' } }); // 短すぎるニックネーム
+      fireEvent.change(nameInput, { target: { value: '山田太郎' } });
+      fireEvent.change(jobTitleInput, { target: { value: 'エンジニア' } });
+      fireEvent.click(submitButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/ニックネームの形式が正しくありません/)).toBeInTheDocument();
       });
 
       expect(mockOnSubmit).not.toHaveBeenCalled();
@@ -151,6 +206,7 @@ describe('ProfileForm', () => {
     it('スキルを削除できる', async () => {
       const mockOnSubmit = vi.fn();
       const initialData: Partial<ProfileFormData> = {
+        nickname: 'test-user',
         name: '山田太郎',
         jobTitle: 'エンジニア',
         skills: ['React', 'TypeScript'],
@@ -229,6 +285,7 @@ describe('ProfileForm', () => {
     it('SNSリンクを削除できる', async () => {
       const mockOnSubmit = vi.fn();
       const initialData: Partial<ProfileFormData> = {
+        nickname: 'test-user',
         name: '山田太郎',
         jobTitle: 'エンジニア',
         socialLinks: [{ service: 'github', url: 'https://github.com/test' }],
@@ -293,10 +350,12 @@ describe('ProfileForm', () => {
 
       render(<ProfileForm onSubmit={mockOnSubmit} loading={true} />);
 
+      const nicknameInput = screen.getByLabelText(/ニックネーム/);
       const nameInput = screen.getByLabelText(/名前/);
       const jobTitleInput = screen.getByLabelText(/職種/);
       const submitButton = screen.getByRole('button', { name: '保存中...' });
 
+      expect(nicknameInput).toBeDisabled();
       expect(nameInput).toBeDisabled();
       expect(jobTitleInput).toBeDisabled();
       expect(submitButton).toBeDisabled();
@@ -332,6 +391,7 @@ describe('ProfileForm', () => {
     it('画像を削除できる', async () => {
       const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
       const initialData: Partial<ProfileFormData> = {
+        nickname: 'test-user',
         name: '山田太郎',
         jobTitle: 'エンジニア',
         imageUrl: 'https://example.com/image.jpg',
@@ -354,6 +414,7 @@ describe('ProfileForm', () => {
     it('画像プレビューが表示される', async () => {
       const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
       const initialData: Partial<ProfileFormData> = {
+        nickname: 'test-user',
         name: '山田太郎',
         jobTitle: 'エンジニア',
         imageUrl: 'https://example.com/image.jpg',
@@ -374,9 +435,11 @@ describe('ProfileForm', () => {
       render(<ProfileForm onSubmit={mockOnSubmit} />);
 
       // フォーム入力
+      const nicknameInput = screen.getByLabelText(/ニックネーム/);
       const nameInput = screen.getByLabelText(/名前/);
       const jobTitleInput = screen.getByLabelText(/職種/);
 
+      fireEvent.change(nicknameInput, { target: { value: 'test-user' } });
       fireEvent.change(nameInput, { target: { value: '山田太郎' } });
       fireEvent.change(jobTitleInput, { target: { value: 'エンジニア' } });
 
@@ -392,6 +455,7 @@ describe('ProfileForm', () => {
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
+            nickname: 'test-user',
             name: '山田太郎',
             jobTitle: 'エンジニア',
             imageFile: file,

@@ -9,6 +9,7 @@ import { Input } from '../common/Input';
 import { TextArea } from '../common/TextArea';
 import { Button } from '../common/Button';
 import { ErrorMessage } from '../common/ErrorMessage';
+import { NicknameInput } from '../NicknameInput';
 import { validateProfileForm } from '../../utils/validation';
 import { validateImageFile } from '../../services/imageService';
 import { PredefinedService } from '../../types/profile';
@@ -37,6 +38,7 @@ export function ProfileForm({
 }: ProfileFormProps) {
   // フォームの状態
   const [nickname, setNickname] = useState(initialData?.nickname || '');
+  const [isNicknameValid, setIsNicknameValid] = useState(false);
   const [name, setName] = useState(initialData?.name || '');
   const [jobTitle, setJobTitle] = useState(initialData?.jobTitle || '');
   const [bio, setBio] = useState(initialData?.bio || '');
@@ -58,6 +60,7 @@ export function ProfileForm({
   useEffect(() => {
     if (initialData) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
+      setNickname(initialData.nickname || '');
       setName(initialData.name || '');
       setJobTitle(initialData.jobTitle || '');
       setBio(initialData.bio || '');
@@ -123,6 +126,26 @@ export function ProfileForm({
   };
 
   /**
+   * ニックネーム変更ハンドラ
+   */
+  const handleNicknameChange = (value: string) => {
+    setNickname(value);
+    // バリデーションエラーをクリア
+    if (validationErrors.nickname) {
+      const newErrors = { ...validationErrors };
+      delete newErrors.nickname;
+      setValidationErrors(newErrors);
+    }
+  };
+
+  /**
+   * ニックネームバリデーション状態変更ハンドラ
+   */
+  const handleNicknameValidationChange = (isValid: boolean) => {
+    setIsNicknameValid(isValid);
+  };
+
+  /**
    * フォーム送信ハンドラ
    */
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -146,6 +169,14 @@ export function ProfileForm({
 
     if (!validationResult.success) {
       setValidationErrors(validationResult.errors);
+      return;
+    }
+
+    // ニックネーム利用可能性チェック（編集時は現在のニックネームと異なる場合のみ）
+    if (!isNicknameValid && nickname !== initialData?.nickname) {
+      setValidationErrors({
+        nickname: ['ニックネームが利用できません']
+      });
       return;
     }
 
@@ -273,6 +304,18 @@ export function ProfileForm({
         {error && <ErrorMessage message={error} />}
 
         <form onSubmit={handleSubmit} className="profile-form">
+          {/* ニックネーム */}
+          <NicknameInput
+            value={nickname}
+            onChange={handleNicknameChange}
+            onValidationChange={handleNicknameValidationChange}
+            error={validationErrors.nickname?.[0]}
+            required
+            disabled={loading}
+            placeholder="例: john-doe"
+            currentNickname={initialData?.nickname}
+          />
+
           {/* プロフィール画像 */}
           <div className="profile-form-section">
             <label className="profile-form-section-label">プロフィール画像</label>

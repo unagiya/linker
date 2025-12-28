@@ -72,6 +72,12 @@ export const profileSchema = z.object({
  * フォームでは経験年数を文字列として扱うため、専用のスキーマを用意
  */
 export const profileFormSchema = z.object({
+  nickname: z
+    .string()
+    .min(1, 'ニックネームは必須です')
+    .refine((value) => validateNickname(value).isValid, {
+      message: 'ニックネームの形式が正しくありません'
+    }),
   name: z.string().min(1, '名前は必須です').max(100, '名前は100文字以内で入力してください'),
   jobTitle: z.string().min(1, '職種は必須です').max(100, '職種は100文字以内で入力してください'),
   bio: z.string().max(500, '自己紹介は500文字以内で入力してください').optional().default(''),
