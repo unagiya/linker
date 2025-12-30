@@ -54,6 +54,28 @@ export interface ProfileRepository {
   findByNickname(nickname: string): Promise<Profile | null>;
 
   /**
+   * ニックネームが利用可能かチェックする
+   * 大文字小文字を区別しない重複チェックを行う
+   * 
+   * @param nickname - チェックするニックネーム
+   * @param excludeUserId - 除外するユーザーID（編集時に現在のユーザーを除外）
+   * @returns 利用可能な場合はtrue、既に使用されている場合はfalse
+   * @throws エラーが発生した場合
+   */
+  isNicknameAvailable(nickname: string, excludeUserId?: string): Promise<boolean>;
+
+  /**
+   * ニックネームの重複をチェックする
+   * 大文字小文字を区別しない重複チェックを行う
+   * 
+   * @param nickname - チェックするニックネーム
+   * @param excludeProfileId - 除外するプロフィールID（編集時に現在のプロフィールを除外）
+   * @returns 重複している場合はtrue、していない場合はfalse
+   * @throws エラーが発生した場合
+   */
+  checkNicknameDuplicate(nickname: string, excludeProfileId?: string): Promise<boolean>;
+
+  /**
    * すべてのプロフィールを取得する
    *
    * @returns プロフィールの配列

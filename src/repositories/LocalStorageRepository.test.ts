@@ -1,210 +1,231 @@
 /**
- * LocalStorageRepositoryのユニットテスト
+ * LocalStorageRepository のユニットテスト
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LocalStorageRepository } from './LocalStorageRepository';
-import type { Profile } from '../types';
+import type { Profile } from '../types/profile';
+
+// LocalStorageをモック
+const mockLocalStorage = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+};
+
+Object.defineProperty(window, 'localStorage', {
+  value: mockLocalStorage,
+});
 
 describe('LocalStorageRepository', () => {
   let repository: LocalStorageRepository;
 
-  // テスト用のプロフィールデータ
-  const createTestProfile = (id: string): Profile => ({
-    id,
+  const mockProfile: Profile = {
+    id: 'test-id',
     user_id: 'test-user-id',
-    nickname: `test-nickname-${id}`,
-    name: 'テストユーザー',
-    jobTitle: 'ソフトウェアエンジニア',
-    bio: 'テスト用のプロフィールです',
-    skills: ['React', 'TypeScript'],
+    nickname: 'testuser',
+    name: 'Test User',
+    jobTitle: 'Developer',
+    bio: 'Test bio',
+    imageUrl: 'https://example.com/image.jpg',
+    skills: ['JavaScript', 'TypeScript'],
     yearsOfExperience: 5,
-    socialLinks: [
-      {
-        id: 'link1',
-        service: 'github',
-        url: 'https://github.com/test',
-      },
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
+    socialLinks: [],
+    createdAt: '2023-01-01T00:00:00Z',
+    updatedAt: '2023-01-01T00:00:00Z',
+  };
 
-  beforeEach(async () => {
+  const mockProfile2: Profile = {
+    id: 'test-id-2',
+    user_id: 'test-user-id-2',
+    nickname: 'anotheruser',
+    name: 'Another User',
+    jobTitle: 'Designer',
+    bio: 'Another bio',
+    skills: ['Design', 'UI/UX'],
+    socialLinks: [],
+    createdAt: '2023-01-02T00:00:00Z',
+    updatedAt: '2023-01-02T00:00:00Z',
+  };
+
+  beforeEach(() => {
     repository = new LocalStorageRepository();
-    // 各テストの前にストレージをクリア
-    await repository.clear();
+    vi.clearAllMocks();
   });
 
-  describe('save', () => {
-    it('プロフィールを保存できる', async () => {
-      const profile = createTestProfile('test-id-1');
+  describe('findByNickname', () => {
+    it('ニックネームでプロフィールを検索できる（大文字小文字を区別しない）', async () => {
+      const profileMap = {
+        [mockProfile.id]: mockProfile,
+        [mockProfile2.id]: mockProfile2,
+      };
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(profileMap));
 
-      await repository.save(profile);
+      // 大文字小文字を区別しない検索のテスト
+      const result = await repository.findByNickname('TESTUSER');
 
-      const saved = await repository.findById('test-id-1');
-      expect(saved).toEqual(profile);
+      expect(result).toEqual(mockProfile);
     });
 
-    it('同じIDのプロフィールを上書きできる', async () => {
-      const profile1 = createTestProfile('test-id-1');
-      const profile2 = { ...profile1, name: '更新されたユーザー' };
+    it('存在しないニックネームの場合nullを返す', async () => {
+      const profileMap = {
+        [mockProfile.id]: mockProfile,
+      };
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(profileMap));
 
-      await repository.save(profile1);
-      await repository.save(profile2);
+      const result = await repository.findByNickname('nonexistent');
 
-      const saved = await repository.findById('test-id-1');
-      expect(saved?.name).toBe('更新されたユーザー');
+      expect(result).toBeNull();
     });
 
-    it('複数のプロフィールを保存できる', async () => {
-      const profile1 = createTestProfile('test-id-1');
-      const profile2 = createTestProfile('test-id-2');
+    it('ストレージが空の場合nullを返す', async () => {
+      mockLocalStorage.getItem.mockReturnValue(null);
 
-      await repository.save(profile1);
-      await repository.save(profile2);
+      const result = await repository.findByNickname('testuser');
 
-      const all = await repository.findAll();
-      expect(all).toHaveLength(2);
-    });
-  });
-
-  describe('findById', () => {
-    it('存在するプロフィールを取得できる', async () => {
-      const profile = createTestProfile('test-id-1');
-      await repository.save(profile);
-
-      const found = await repository.findById('test-id-1');
-
-      expect(found).toEqual(profile);
+      expect(result).toBeNull();
     });
 
-    it('存在しないプロフィールの場合nullを返す', async () => {
-      const found = await repository.findById('non-existent-id');
+    it('データが破損している場合nullを返す', async () => {
+      mockLocalStorage.getItem.mockReturnValue('invalid json');
 
-      expect(found).toBeNull();
-    });
+      const result = await repository.findByNickname('testuser');
 
-    it('空のストレージの場合nullを返す', async () => {
-      const found = await repository.findById('test-id-1');
-
-      expect(found).toBeNull();
+      expect(result).toBeNull();
     });
   });
 
-  describe('findAll', () => {
-    it('すべてのプロフィールを取得できる', async () => {
-      const profile1 = createTestProfile('test-id-1');
-      const profile2 = createTestProfile('test-id-2');
-      const profile3 = createTestProfile('test-id-3');
+  describe('isNicknameAvailable', () => {
+    it('利用可能なニックネームの場合trueを返す', async () => {
+      const profileMap = {
+        [mockProfile.id]: mockProfile,
+      };
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(profileMap));
 
-      await repository.save(profile1);
-      await repository.save(profile2);
-      await repository.save(profile3);
+      const result = await repository.isNicknameAvailable('newuser');
 
-      const all = await repository.findAll();
-
-      expect(all).toHaveLength(3);
-      expect(all).toContainEqual(profile1);
-      expect(all).toContainEqual(profile2);
-      expect(all).toContainEqual(profile3);
+      expect(result).toBe(true);
     });
 
-    it('空のストレージの場合空配列を返す', async () => {
-      const all = await repository.findAll();
+    it('既に使用されているニックネームの場合falseを返す（大文字小文字を区別しない）', async () => {
+      const profileMap = {
+        [mockProfile.id]: mockProfile,
+      };
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(profileMap));
 
-      expect(all).toEqual([]);
-    });
-  });
+      const result = await repository.isNicknameAvailable('TESTUSER');
 
-  describe('delete', () => {
-    it('プロフィールを削除できる', async () => {
-      const profile = createTestProfile('test-id-1');
-      await repository.save(profile);
-
-      await repository.delete('test-id-1');
-
-      const found = await repository.findById('test-id-1');
-      expect(found).toBeNull();
+      expect(result).toBe(false);
     });
 
-    it('存在しないプロフィールを削除してもエラーにならない', async () => {
-      await expect(repository.delete('non-existent-id')).resolves.not.toThrow();
+    it('除外ユーザーIDが指定された場合、そのユーザーを除外する', async () => {
+      const profileMap = {
+        [mockProfile.id]: mockProfile,
+      };
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(profileMap));
+
+      // 同じニックネームでも、除外ユーザーIDが指定されていれば利用可能
+      const result = await repository.isNicknameAvailable('testuser', 'test-user-id');
+
+      expect(result).toBe(true);
     });
 
-    it('特定のプロフィールのみ削除される', async () => {
-      const profile1 = createTestProfile('test-id-1');
-      const profile2 = createTestProfile('test-id-2');
+    it('除外ユーザーID以外のユーザーが同じニックネームを使用している場合falseを返す', async () => {
+      const profileMap = {
+        [mockProfile.id]: mockProfile,
+        [mockProfile2.id]: mockProfile2,
+      };
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(profileMap));
 
-      await repository.save(profile1);
-      await repository.save(profile2);
+      // 別のユーザーが同じニックネームを使用している場合
+      const result = await repository.isNicknameAvailable('testuser', 'different-user-id');
 
-      await repository.delete('test-id-1');
-
-      const all = await repository.findAll();
-      expect(all).toHaveLength(1);
-      expect(all[0]).toEqual(profile2);
-    });
-  });
-
-  describe('exists', () => {
-    it('存在するプロフィールの場合trueを返す', async () => {
-      const profile = createTestProfile('test-id-1');
-      await repository.save(profile);
-
-      const exists = await repository.exists('test-id-1');
-
-      expect(exists).toBe(true);
+      expect(result).toBe(false);
     });
 
-    it('存在しないプロフィールの場合falseを返す', async () => {
-      const exists = await repository.exists('non-existent-id');
+    it('ストレージが空の場合trueを返す', async () => {
+      mockLocalStorage.getItem.mockReturnValue(null);
 
-      expect(exists).toBe(false);
+      const result = await repository.isNicknameAvailable('testuser');
+
+      expect(result).toBe(true);
+    });
+
+    it('データ読み込みエラーの場合エラーを投げる', async () => {
+      mockLocalStorage.getItem.mockImplementation(() => {
+        throw new Error('Storage error');
+      });
+
+      await expect(repository.isNicknameAvailable('testuser')).rejects.toThrow(
+        'ニックネームの利用可能性チェックに失敗しました: Storage error'
+      );
     });
   });
 
-  describe('エラーケース', () => {
-    it('破損したデータがある場合、空配列を返す', async () => {
-      // 破損したデータを直接localStorageに設定
-      localStorage.setItem('linker_profiles', 'invalid json');
+  describe('checkNicknameDuplicate', () => {
+    it('重複していない場合falseを返す', async () => {
+      const profileMap = {
+        [mockProfile.id]: mockProfile,
+      };
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(profileMap));
 
-      const all = await repository.findAll();
+      const result = await repository.checkNicknameDuplicate('uniqueuser');
 
-      expect(all).toEqual([]);
+      expect(result).toBe(false);
     });
 
-    it('破損したデータがある場合、findByIdはnullを返す', async () => {
-      // 破損したデータを直接localStorageに設定
-      localStorage.setItem('linker_profiles', 'invalid json');
+    it('重複している場合trueを返す（大文字小文字を区別しない）', async () => {
+      const profileMap = {
+        [mockProfile.id]: mockProfile,
+      };
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(profileMap));
 
-      const found = await repository.findById('test-id-1');
+      const result = await repository.checkNicknameDuplicate('TESTUSER');
 
-      expect(found).toBeNull();
+      expect(result).toBe(true);
     });
 
-    it('不正な形式のデータがある場合、空配列を返す', async () => {
-      // 配列形式（期待される形式はオブジェクト）
-      localStorage.setItem('linker_profiles', '[]');
+    it('除外プロフィールIDが指定された場合、そのプロフィールを除外する', async () => {
+      const profileMap = {
+        [mockProfile.id]: mockProfile,
+      };
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(profileMap));
 
-      const all = await repository.findAll();
+      // 同じニックネームでも、除外プロフィールIDが指定されていれば重複なし
+      const result = await repository.checkNicknameDuplicate('testuser', 'test-id');
 
-      expect(all).toEqual([]);
+      expect(result).toBe(false);
     });
-  });
 
-  describe('clear', () => {
-    it('すべてのデータをクリアできる', async () => {
-      const profile1 = createTestProfile('test-id-1');
-      const profile2 = createTestProfile('test-id-2');
+    it('除外プロフィールID以外のプロフィールが同じニックネームを使用している場合trueを返す', async () => {
+      const profileMap = {
+        [mockProfile.id]: mockProfile,
+        [mockProfile2.id]: mockProfile2,
+      };
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(profileMap));
 
-      await repository.save(profile1);
-      await repository.save(profile2);
+      // 別のプロフィールが同じニックネームを使用している場合
+      const result = await repository.checkNicknameDuplicate('testuser', 'different-profile-id');
 
-      await repository.clear();
+      expect(result).toBe(true);
+    });
 
-      const all = await repository.findAll();
-      expect(all).toEqual([]);
+    it('ストレージが空の場合falseを返す', async () => {
+      mockLocalStorage.getItem.mockReturnValue(null);
+
+      const result = await repository.checkNicknameDuplicate('testuser');
+
+      expect(result).toBe(false);
+    });
+
+    it('データ読み込みエラーの場合エラーを投げる', async () => {
+      mockLocalStorage.getItem.mockImplementation(() => {
+        throw new Error('Storage error');
+      });
+
+      await expect(repository.checkNicknameDuplicate('testuser')).rejects.toThrow(
+        'ニックネームの重複チェックに失敗しました: Storage error'
+      );
     });
   });
 });

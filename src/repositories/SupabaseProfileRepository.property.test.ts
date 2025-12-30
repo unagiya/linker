@@ -731,7 +731,7 @@ describe('Property 25: RLSポリシーの継続動作', () => {
 
         // findByNickname時のモック設定
         const mockSelectForNickname = vi.fn().mockReturnThis();
-        const mockEqForNickname = vi.fn().mockReturnThis();
+        const mockIlikeForNickname = vi.fn().mockReturnThis();
         const mockSingleForNickname = vi.fn().mockResolvedValue({
           data: profileRow,
           error: null,
@@ -760,11 +760,11 @@ describe('Property 25: RLSポリシーの継続動作', () => {
             // 3回目の呼び出し（findByNickname）
             const mockChain = {
               select: mockSelectForNickname,
-              eq: mockEqForNickname,
+              ilike: mockIlikeForNickname,
               single: mockSingleForNickname,
             };
             mockSelectForNickname.mockReturnValue(mockChain);
-            mockEqForNickname.mockReturnValue(mockChain);
+            mockIlikeForNickname.mockReturnValue(mockChain);
             return mockChain as any;
           }
         });
@@ -790,10 +790,328 @@ describe('Property 25: RLSポリシーの継続動作', () => {
         // RLSポリシーが適用されていることを確認するため、
         // 適切なクエリパラメータが使用されていることを検証
         expect(mockEqForFind).toHaveBeenCalledWith('id', profile.id);
-        expect(mockEqForNickname).toHaveBeenCalledWith('nickname', profile.nickname);
+        expect(mockIlikeForNickname).toHaveBeenCalledWith('nickname', profile.nickname);
 
         return fieldsMatch;
       }),
+      { numRuns: 100 }
+    );
+  });
+});
+
+/**
+ * Feature: profile-nickname-urls, Property 36: ニックネーム重複チェック機能
+ * 検証: 要件 3.1, 4.4
+ *
+ * 任意のニックネームに対して、重複チェック機能が大文字小文字を区別せずに正しく動作する
+ */
+describe('Property 36: ニックネーム重複チェック機能', () => {
+  let repository: SupabaseProfileRepository;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    repository = new SupabaseProfileRepository();
+  });
+
+  // ニックネームのジェネレーター
+  const nicknameArbitrary = fc.string({ minLength: 3, maxLength: 36 })
+    .filter(s => /^[a-zA-Z0-9_-]+$/.test(s))
+    .filter(s => /^[a-zA-Z0-9].*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/.test(s))
+    .filter(s => !/[-_]{2,}/.test(s));
+
+  it('大文字小文字を区別しない重複チェックが正しく動作する', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        nicknameArbitrary,
+        fc.boolean(),
+        async (nickname: string, isDuplicate: boolean) => {
+          // モックの設定
+          const mockQuery = {
+            ilike: vi.fn().mockReturnThis(),
+            neq: vi.fn().mockReturnThis(),
+          };
+          
+          const mockSelect = vi.fn().mockReturnValue(mockQuery);
+          
+          // 重複の有無に応じてモックデータを設定
+          const mockData = isDuplicate ? [{ id: 'existing-id' }] : [];
+          Object.assign(mockQuery, { data: mockData, error: null });
+
+          vi.mocked(supabase.from).mockReturnValue({
+            select: mockSelect,
+          } as any);
+
+          // 重複チェックを実行
+          const result = await repository.checkNicknameDuplicate(nickname);
+
+          // 結果が期待値と一致することを確認
+          const expectedResult = isDuplicate;
+          const actualResult = result;
+
+          // ilike関数が大文字小文字を区別しない検索で呼ばれることを確認
+          expect(mockQuery.ilike).toHaveBeenCalledWith('nickname', nickname);
+
+          return actualResult === expectedResult;
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  it('除外プロフィールIDが指定された場合、そのプロフィールを除外する', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        nicknameArbitrary,
+        fc.uuid(),
+        fc.boolean(),
+        async (nickname: string, excludeProfileId: string, hasOtherDuplicate: boolean) => {
+          // モックの設定
+          const mockQuery = {
+            ilike: vi.fn().mockReturnThis(),
+            neq: vi.fn().mockReturnThis(),
+          };
+          
+          const mockSelect = vi.fn().mockReturnValue(mockQuery);
+          
+          // 他の重複の有無に応じてモックデータを設定
+          const mockData = hasOtherDuplicate ? [{ id: 'other-id' }] : [];
+          Object.assign(mockQuery, { data: mockData, error: null });
+
+          vi.mocked(supabase.from).mockReturnValue({
+            select: mockSelect,
+          } as any);
+
+          // 除外プロフィールIDを指定して重複チェックを実行
+          const result = await repository.checkNicknameDuplicate(nickname, excludeProfileId);
+
+          // 結果が期待値と一致することを確認
+          const expectedResult = hasOtherDuplicate;
+          const actualResult = result;
+
+          // neq関数が除外プロフィールIDで呼ばれることを確認
+          expect(mockQuery.neq).toHaveBeenCalledWith('id', excludeProfileId);
+
+          return actualResult === expectedResult;
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+});
+
+/**
+ * Feature: profile-nickname-urls, Property 37: ニックネーム利用可能性チェック機能
+ * 検証: 要件 1.2, 4.2, 5.1
+ *
+ * 任意のニックネームに対して、利用可能性チェック機能が大文字小文字を区別せずに正しく動作する
+ */
+describe('Property 37: ニックネーム利用可能性チェック機能', () => {
+  let repository: SupabaseProfileRepository;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    repository = new SupabaseProfileRepository();
+  });
+
+  // ニックネームのジェネレーター
+  const nicknameArbitrary = fc.string({ minLength: 3, maxLength: 36 })
+    .filter(s => /^[a-zA-Z0-9_-]+$/.test(s))
+    .filter(s => /^[a-zA-Z0-9].*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/.test(s))
+    .filter(s => !/[-_]{2,}/.test(s));
+
+  it('大文字小文字を区別しない利用可能性チェックが正しく動作する', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        nicknameArbitrary,
+        fc.boolean(),
+        async (nickname: string, isAvailable: boolean) => {
+          // モックの設定
+          const mockQuery = {
+            ilike: vi.fn().mockReturnThis(),
+            neq: vi.fn().mockReturnThis(),
+          };
+          
+          const mockSelect = vi.fn().mockReturnValue(mockQuery);
+          
+          // 利用可能性に応じてモックデータを設定
+          const mockData = isAvailable ? [] : [{ id: 'existing-id' }];
+          Object.assign(mockQuery, { data: mockData, error: null });
+
+          vi.mocked(supabase.from).mockReturnValue({
+            select: mockSelect,
+          } as any);
+
+          // 利用可能性チェックを実行
+          const result = await repository.isNicknameAvailable(nickname);
+
+          // 結果が期待値と一致することを確認
+          const expectedResult = isAvailable;
+          const actualResult = result;
+
+          // ilike関数が大文字小文字を区別しない検索で呼ばれることを確認
+          expect(mockQuery.ilike).toHaveBeenCalledWith('nickname', nickname);
+
+          return actualResult === expectedResult;
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  it('除外ユーザーIDが指定された場合、そのユーザーを除外する', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        nicknameArbitrary,
+        fc.uuid(),
+        fc.boolean(),
+        async (nickname: string, excludeUserId: string, hasOtherUser: boolean) => {
+          // モックの設定
+          const mockQuery = {
+            ilike: vi.fn().mockReturnThis(),
+            neq: vi.fn().mockReturnThis(),
+          };
+          
+          const mockSelect = vi.fn().mockReturnValue(mockQuery);
+          
+          // 他のユーザーの有無に応じてモックデータを設定
+          const mockData = hasOtherUser ? [{ id: 'other-user-profile' }] : [];
+          Object.assign(mockQuery, { data: mockData, error: null });
+
+          vi.mocked(supabase.from).mockReturnValue({
+            select: mockSelect,
+          } as any);
+
+          // 除外ユーザーIDを指定して利用可能性チェックを実行
+          const result = await repository.isNicknameAvailable(nickname, excludeUserId);
+
+          // 結果が期待値と一致することを確認（他のユーザーがいなければ利用可能）
+          const expectedResult = !hasOtherUser;
+          const actualResult = result;
+
+          // neq関数が除外ユーザーIDで呼ばれることを確認
+          expect(mockQuery.neq).toHaveBeenCalledWith('user_id', excludeUserId);
+
+          return actualResult === expectedResult;
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+});
+
+/**
+ * Feature: profile-nickname-urls, Property 38: 大文字小文字を区別しないニックネーム検索
+ * 検証: 要件 2.5, 3.1
+ *
+ * 任意のニックネームに対して、大文字小文字を区別しない検索が正しく動作する
+ */
+describe('Property 38: 大文字小文字を区別しないニックネーム検索', () => {
+  let repository: SupabaseProfileRepository;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    repository = new SupabaseProfileRepository();
+  });
+
+  // ニックネームのジェネレーター
+  const nicknameArbitrary = fc.string({ minLength: 3, maxLength: 36 })
+    .filter(s => /^[a-zA-Z0-9_-]+$/.test(s))
+    .filter(s => /^[a-zA-Z0-9].*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/.test(s))
+    .filter(s => !/[-_]{2,}/.test(s));
+
+  // プロフィールのジェネレーター
+  const profileArbitrary = fc.record({
+    id: fc.uuid(),
+    user_id: fc.uuid(),
+    nickname: nicknameArbitrary,
+    name: fc.string({ minLength: 1, maxLength: 100 }),
+    jobTitle: fc.string({ minLength: 1, maxLength: 100 }),
+    bio: fc.option(fc.string({ maxLength: 500 }), { nil: undefined }),
+    imageUrl: fc.option(fc.webUrl({ validSchemes: ['https'] }), { nil: undefined }),
+    skills: fc.array(fc.string({ minLength: 1, maxLength: 50 }), { maxLength: 20 }),
+    yearsOfExperience: fc.option(fc.nat({ max: 100 }), { nil: undefined }),
+    socialLinks: fc.array(
+      fc.record({
+        id: fc.uuid(),
+        service: fc.oneof(
+          fc.constantFrom('twitter', 'github', 'facebook'),
+          fc.string({ minLength: 1, maxLength: 50 })
+        ),
+        url: fc.webUrl({ validSchemes: ['http', 'https'] }),
+      }),
+      { maxLength: 10 }
+    ),
+    createdAt: fc
+      .integer({ min: 946684800000, max: 1924905600000 })
+      .map((timestamp) => new Date(timestamp).toISOString()),
+    updatedAt: fc
+      .integer({ min: 946684800000, max: 1924905600000 })
+      .map((timestamp) => new Date(timestamp).toISOString()),
+  });
+
+  it('大文字小文字を区別しないニックネーム検索が正しく動作する', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        profileArbitrary,
+        fc.boolean(),
+        fc.boolean(),
+        async (profile: Profile, upperCase: boolean, exists: boolean) => {
+          // 検索用ニックネームを大文字または小文字に変換
+          const searchNickname = upperCase 
+            ? profile.nickname.toUpperCase() 
+            : profile.nickname.toLowerCase();
+
+          // データベースの行データに変換
+          const profileRow = exists ? {
+            id: profile.id,
+            user_id: profile.user_id,
+            nickname: profile.nickname,
+            name: profile.name,
+            job_title: profile.jobTitle,
+            bio: profile.bio || null,
+            image_url: profile.imageUrl || null,
+            skills: profile.skills,
+            years_of_experience:
+              profile.yearsOfExperience !== undefined ? profile.yearsOfExperience : null,
+            social_links: profile.socialLinks,
+            created_at: profile.createdAt,
+            updated_at: profile.updatedAt,
+          } : null;
+
+          // モックの設定
+          const mockSelect = vi.fn().mockReturnThis();
+          const mockIlike = vi.fn().mockReturnThis();
+          const mockSingle = vi.fn().mockResolvedValue({
+            data: profileRow,
+            error: exists ? null : { code: 'PGRST116', message: 'Not found' },
+          });
+
+          const mockChain = {
+            select: mockSelect,
+            ilike: mockIlike,
+            single: mockSingle,
+          };
+
+          mockSelect.mockReturnValue(mockChain);
+          mockIlike.mockReturnValue(mockChain);
+
+          vi.mocked(supabase.from).mockReturnValue(mockChain as any);
+
+          // ニックネームで検索
+          const result = await repository.findByNickname(searchNickname);
+
+          // ilike関数が大文字小文字を区別しない検索で呼ばれることを確認
+          expect(mockIlike).toHaveBeenCalledWith('nickname', searchNickname);
+
+          // 結果が期待値と一致することを確認
+          if (exists) {
+            if (!result) return false;
+            return result.nickname === profile.nickname;
+          } else {
+            return result === null;
+          }
+        }
+      ),
       { numRuns: 100 }
     );
   });

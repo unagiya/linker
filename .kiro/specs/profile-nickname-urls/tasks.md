@@ -195,7 +195,7 @@
   - **プロパティ19: 使用済みニックネームへの変更拒否**
   - **検証: 要件 4.3**
 
-- [ ] 9. Repository層の拡張
+- [x] 9. Repository層の拡張
   - 既存のSupabaseProfileRepositoryを拡張
   - save関数でnicknameフィールドの処理を追加
   - findByNickname関数の追加
@@ -203,7 +203,7 @@
   - ニックネーム重複チェック機能
   - _要件: 3.1, 4.4_
 
-- [ ]* 9.1 Repository拡張のユニットテストを作成
+- [x] 9.1 Repository拡張のユニットテストを作成
   - findByNickname関数のテスト
   - save関数のニックネーム処理テスト
   - 重複チェック機能のテスト

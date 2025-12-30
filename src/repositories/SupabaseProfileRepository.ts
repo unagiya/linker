@@ -104,12 +104,13 @@ export class SupabaseProfileRepository implements ProfileRepository {
 
   /**
    * ニックネームでプロフィールを検索する
+   * 大文字小文字を区別しない検索を行う
    */
   async findByNickname(nickname: string): Promise<Profile | null> {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('nickname', nickname)
+      .ilike('nickname', nickname)
       .single();
 
     if (error) {
@@ -121,6 +122,64 @@ export class SupabaseProfileRepository implements ProfileRepository {
     }
 
     return this.mapToProfile(data);
+  }
+
+  /**
+   * ニックネームが利用可能かチェックする
+   * 大文字小文字を区別しない重複チェックを行う
+   * 
+   * @param nickname - チェックするニックネーム
+   * @param excludeUserId - 除外するユーザーID（編集時に現在のユーザーを除外）
+   * @returns 利用可能な場合はtrue、既に使用されている場合はfalse
+   */
+  async isNicknameAvailable(nickname: string, excludeUserId?: string): Promise<boolean> {
+    let query = supabase
+      .from('profiles')
+      .select('id')
+      .ilike('nickname', nickname);
+
+    // 編集時は現在のユーザーを除外
+    if (excludeUserId) {
+      query = query.neq('user_id', excludeUserId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`ニックネームの利用可能性チェックに失敗しました: ${error.message}`);
+    }
+
+    // データが存在しない場合は利用可能
+    return data.length === 0;
+  }
+
+  /**
+   * ニックネームの重複をチェックする
+   * 大文字小文字を区別しない重複チェックを行う
+   * 
+   * @param nickname - チェックするニックネーム
+   * @param excludeProfileId - 除外するプロフィールID（編集時に現在のプロフィールを除外）
+   * @returns 重複している場合はtrue、していない場合はfalse
+   */
+  async checkNicknameDuplicate(nickname: string, excludeProfileId?: string): Promise<boolean> {
+    let query = supabase
+      .from('profiles')
+      .select('id')
+      .ilike('nickname', nickname);
+
+    // 編集時は現在のプロフィールを除外
+    if (excludeProfileId) {
+      query = query.neq('id', excludeProfileId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`ニックネームの重複チェックに失敗しました: ${error.message}`);
+    }
+
+    // データが存在する場合は重複している
+    return data.length > 0;
   }
 
   /**

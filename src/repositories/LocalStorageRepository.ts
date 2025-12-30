@@ -66,6 +66,7 @@ export class LocalStorageRepository implements ProfileRepository {
 
   /**
    * ニックネームでプロフィールを検索する
+   * 大文字小文字を区別しない検索を行う
    * @param nickname ニックネーム
    * @returns プロフィール、または存在しない場合はnull
    */
@@ -77,6 +78,76 @@ export class LocalStorageRepository implements ProfileRepository {
     } catch (error) {
       console.error('プロフィールの読み込みに失敗しました:', error);
       return null;
+    }
+  }
+
+  /**
+   * ニックネームが利用可能かチェックする
+   * 大文字小文字を区別しない重複チェックを行う
+   * 
+   * @param nickname - チェックするニックネーム
+   * @param excludeUserId - 除外するユーザーID（編集時に現在のユーザーを除外）
+   * @returns 利用可能な場合はtrue、既に使用されている場合はfalse
+   */
+  async isNicknameAvailable(nickname: string, excludeUserId?: string): Promise<boolean> {
+    try {
+      const data = localStorage.getItem(this.STORAGE_KEY);
+      if (!data) {
+        return true; // データがない場合は利用可能
+      }
+
+      const parsed = JSON.parse(data);
+
+      // データの形式を検証
+      if (typeof parsed !== 'object' || parsed === null) {
+        return true; // 不正なデータの場合は利用可能とする
+      }
+
+      const profiles = parsed as ProfileMap;
+      const existingProfile = Object.values(profiles).find((p) => {
+        const nicknameMatches = p.nickname.toLowerCase() === nickname.toLowerCase();
+        const shouldExclude = excludeUserId && p.user_id === excludeUserId;
+        return nicknameMatches && !shouldExclude;
+      });
+      return !existingProfile;
+    } catch (error) {
+      console.error('ニックネームの利用可能性チェックに失敗しました:', error);
+      throw new Error(`ニックネームの利用可能性チェックに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+    }
+  }
+
+  /**
+   * ニックネームの重複をチェックする
+   * 大文字小文字を区別しない重複チェックを行う
+   * 
+   * @param nickname - チェックするニックネーム
+   * @param excludeProfileId - 除外するプロフィールID（編集時に現在のプロフィールを除外）
+   * @returns 重複している場合はtrue、していない場合はfalse
+   */
+  async checkNicknameDuplicate(nickname: string, excludeProfileId?: string): Promise<boolean> {
+    try {
+      const data = localStorage.getItem(this.STORAGE_KEY);
+      if (!data) {
+        return false; // データがない場合は重複なし
+      }
+
+      const parsed = JSON.parse(data);
+
+      // データの形式を検証
+      if (typeof parsed !== 'object' || parsed === null) {
+        return false; // 不正なデータの場合は重複なしとする
+      }
+
+      const profiles = parsed as ProfileMap;
+      const duplicateProfile = Object.values(profiles).find((p) => {
+        const nicknameMatches = p.nickname.toLowerCase() === nickname.toLowerCase();
+        const shouldExclude = excludeProfileId && p.id === excludeProfileId;
+        return nicknameMatches && !shouldExclude;
+      });
+      return !!duplicateProfile;
+    } catch (error) {
+      console.error('ニックネームの重複チェックに失敗しました:', error);
+      throw new Error(`ニックネームの重複チェックに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
     }
   }
 
