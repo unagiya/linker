@@ -298,7 +298,7 @@
   - **プロパティ34: 成功メッセージの表示**
   - **検証: 要件 9.5**
 
-- [ ] 14. マイグレーションサービスの実装
+- [x] 14. マイグレーションサービスの実装
   - migrationService.tsの作成
   - migrateAllProfiles関数の実装
   - migrateProfile関数の実装

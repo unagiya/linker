@@ -16,7 +16,8 @@
     "test": "NODE_OPTIONS='--max-old-space-size=8192' vitest --run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "migrate:nicknames": "vite-node scripts/migrate-nicknames.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.86.2",
