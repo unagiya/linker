@@ -8,6 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../contexts/ProfileContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { ProfileForm } from '../../components/ProfileForm';
+import { NicknameCustomizationNotice } from '../../components/NicknameCustomizationNotice';
 import type { ProfileFormData } from '../../types';
 import { LoadingSpinner, ErrorMessage } from '../../components/common';
 import { isUUID } from '../../utils/urlUtils';
@@ -179,6 +180,11 @@ export function EditProfile() {
 
         {successMessage && (
           <SuccessMessage message={successMessage} onClose={() => setSuccessMessage(null)} />
+        )}
+
+        {/* UUID形式ニックネームの通知（要件7.2, 7.4） */}
+        {initialData?.nickname && (
+          <NicknameCustomizationNotice nickname={initialData.nickname} />
         )}
 
         <ProfileForm

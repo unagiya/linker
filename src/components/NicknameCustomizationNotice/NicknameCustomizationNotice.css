@@ -1,0 +1,148 @@
+/**
+ * NicknameCustomizationNoticeコンポーネントのスタイル
+ */
+
+.nickname-customization-notice {
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  background-color: #e3f2fd;
+  border: 1px solid #90caf9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nickname-customization-notice-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.nickname-customization-notice-icon {
+  flex-shrink: 0;
+  color: #1976d2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nickname-customization-notice-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.nickname-customization-notice-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1565c0;
+}
+
+.nickname-customization-notice-message {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #0d47a1;
+}
+
+.nickname-customization-notice-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: #1976d2;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nickname-customization-notice-close:hover {
+  background-color: rgba(25, 118, 210, 0.1);
+  color: #1565c0;
+}
+
+.nickname-customization-notice-close:focus {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+}
+
+.nickname-customization-notice-close:active {
+  background-color: rgba(25, 118, 210, 0.2);
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 640px) {
+  .nickname-customization-notice-content {
+    padding: 0.875rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .nickname-customization-notice-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .nickname-customization-notice-title {
+    font-size: 0.9375rem;
+  }
+
+  .nickname-customization-notice-message {
+    font-size: 0.8125rem;
+  }
+
+  .nickname-customization-notice-close svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .nickname-customization-notice {
+    background-color: #0d47a1;
+    border-color: #1976d2;
+  }
+
+  .nickname-customization-notice-icon {
+    color: #90caf9;
+  }
+
+  .nickname-customization-notice-title {
+    color: #e3f2fd;
+  }
+
+  .nickname-customization-notice-message {
+    color: #bbdefb;
+  }
+
+  .nickname-customization-notice-close {
+    color: #90caf9;
+  }
+
+  .nickname-customization-notice-close:hover {
+    background-color: rgba(144, 202, 249, 0.1);
+    color: #bbdefb;
+  }
+
+  .nickname-customization-notice-close:focus {
+    outline-color: #90caf9;
+  }
+
+  .nickname-customization-notice-close:active {
+    background-color: rgba(144, 202, 249, 0.2);
+  }
+}
