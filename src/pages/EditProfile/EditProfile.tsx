@@ -13,6 +13,35 @@ import { LoadingSpinner, ErrorMessage } from '../../components/common';
 import { isUUID } from '../../utils/urlUtils';
 import './EditProfile.css';
 
+/**
+ * 成功メッセージコンポーネント
+ */
+function SuccessMessage({ message, onClose }: { message: string; onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 5000); // 5秒後に自動的に閉じる
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className="edit-profile-success-message" role="alert" aria-live="polite">
+      <div className="edit-profile-success-content">
+        <span className="edit-profile-success-icon">✓</span>
+        <span className="edit-profile-success-text">{message}</span>
+        <button
+          className="edit-profile-success-close"
+          onClick={onClose}
+          aria-label="メッセージを閉じる"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function EditProfile() {
   const { nickname } = useParams<{ nickname: string }>();
   const navigate = useNavigate();
@@ -21,6 +50,8 @@ export function EditProfile() {
   const [initialData, setInitialData] = useState<ProfileFormData | undefined>();
   const [notFound, setNotFound] = useState(false);
   const [notOwner, setNotOwner] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [previousNickname, setPreviousNickname] = useState<string | undefined>();
 
   useEffect(() => {
     if (nickname) {
@@ -51,6 +82,7 @@ export function EditProfile() {
             })),
           };
           setInitialData(formData);
+          setPreviousNickname(loadedProfile.nickname);
         }
       });
     }
@@ -61,10 +93,22 @@ export function EditProfile() {
 
     try {
       const updatedProfile = await updateProfile(profile.id, data);
+      
+      // ニックネームが変更された場合、成功メッセージを表示（要件9.5）
+      if (previousNickname && data.nickname !== previousNickname) {
+        setSuccessMessage('ニックネームが正常に更新されました');
+      }
+      
       // 更新成功時、新しいニックネームベースURLにリダイレクト（要件4.5）
       navigate(`/profile/${updatedProfile.nickname}`);
     } catch (err) {
       console.error('プロフィール更新エラー:', err);
+      // エラーはProfileContextで処理され、errorステートに設定される
+      // ニックネーム変更失敗時のエラーハンドリング（要件4.4, 9.5）
+      if (err instanceof Error) {
+        // エラーメッセージはProfileContextのerrorステートに設定されているため、
+        // ErrorMessageコンポーネントで表示される
+      }
     }
   };
 
@@ -132,6 +176,10 @@ export function EditProfile() {
         </header>
 
         {error && <ErrorMessage message={error} onClose={clearError} />}
+
+        {successMessage && (
+          <SuccessMessage message={successMessage} onClose={() => setSuccessMessage(null)} />
+        )}
 
         <ProfileForm
           initialData={initialData}

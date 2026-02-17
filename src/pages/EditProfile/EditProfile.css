@@ -93,4 +93,82 @@
   .edit-profile-not-found-message {
     font-size: 0.875rem;
   }
+
+  .edit-profile-success-message {
+    margin: 0 0.5rem 1rem 0.5rem;
+  }
+
+  .edit-profile-success-content {
+    padding: 0.75rem 1rem;
+  }
+
+  .edit-profile-success-text {
+    font-size: 0.875rem;
+  }
+}
+
+/* 成功メッセージ */
+.edit-profile-success-message {
+  background-color: #10b981;
+  color: white;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease-out;
+}
+
+.edit-profile-success-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+}
+
+.edit-profile-success-icon {
+  font-size: 1.25rem;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.edit-profile-success-text {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.edit-profile-success-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.edit-profile-success-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.edit-profile-success-close:focus {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
