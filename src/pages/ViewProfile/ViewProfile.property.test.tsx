@@ -47,9 +47,17 @@ describe.skip('Property 11: プロフィールURLアクセス', () => {
     url: fc.webUrl({ validSchemes: ['http', 'https'] }),
   });
 
+  // 有効なニックネームのジェネレーター
+  const validNicknameArbitrary = fc
+    .stringMatching(/^[a-zA-Z0-9][a-zA-Z0-9_-]{1,34}[a-zA-Z0-9]$/)
+    .filter((s) => s.length >= 3 && s.length <= 36)
+    .filter((s) => !/[-_]{2,}/.test(s));
+
   // 完全なプロフィールのジェネレーター
   const profileArbitrary = fc.record({
     id: fc.uuid(),
+    user_id: fc.uuid(),
+    nickname: validNicknameArbitrary,
     name: fc.string({ minLength: 1, maxLength: 100 }).filter((s) => s.trim().length > 0),
     jobTitle: fc.string({ minLength: 1, maxLength: 100 }).filter((s) => s.trim().length > 0),
     bio: fc.option(fc.string({ minLength: 1, maxLength: 500 }), {
@@ -78,11 +86,11 @@ describe.skip('Property 11: プロフィールURLアクセス', () => {
 
         // AuthProviderとProfileProviderをラップするwrapper
         const wrapper = ({ children }: { children: ReactNode }) => (
-          <MemoryRouter initialEntries={[`/profile/${profile.id}`]}>
+          <MemoryRouter initialEntries={[`/profile/${profile.nickname}`]}>
             <AuthProvider>
               <ProfileProvider repository={repository}>
                 <Routes>
-                  <Route path="/profile/:id" element={<ViewProfile />} />
+                  <Route path="/profile/:nickname" element={<ViewProfile />} />
                 </Routes>
                 {children}
               </ProfileProvider>
@@ -151,7 +159,7 @@ describe.skip('Property 11: プロフィールURLアクセス', () => {
             <AuthProvider>
               <ProfileProvider repository={repository}>
                 <Routes>
-                  <Route path="/profile/:id" element={<ViewProfile />} />
+                  <Route path="/profile/:nickname" element={<ViewProfile />} />
                 </Routes>
                 {children}
               </ProfileProvider>
@@ -201,11 +209,11 @@ describe.skip('Property 11: プロフィールURLアクセス', () => {
 
           // AuthProviderとProfileProviderをラップするwrapper
           const wrapper = ({ children }: { children: ReactNode }) => (
-            <MemoryRouter initialEntries={[`/profile/${targetProfile.id}`]}>
+            <MemoryRouter initialEntries={[`/profile/${targetProfile.nickname}`]}>
               <AuthProvider>
                 <ProfileProvider repository={repository}>
                   <Routes>
-                    <Route path="/profile/:id" element={<ViewProfile />} />
+                    <Route path="/profile/:nickname" element={<ViewProfile />} />
                   </Routes>
                   {children}
                 </ProfileProvider>

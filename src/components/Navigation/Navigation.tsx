@@ -31,7 +31,8 @@ export function Navigation() {
       }
       const profile = await loadMyProfile(user.id);
       if (profile) {
-        navigate(`/profile/${profile.id}`);
+        // ニックネームベースURLにナビゲート
+        navigate(`/profile/${profile.nickname}`);
       } else {
         navigate('/create');
       }

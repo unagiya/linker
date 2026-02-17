@@ -24,8 +24,8 @@ export function CreateProfile() {
 
     try {
       const profile = await createProfile(user.id, data);
-      // 作成成功時、プロフィール詳細ページにリダイレクト
-      navigate(`/profile/${profile.id}`);
+      // 作成成功時、ニックネームベースURLにリダイレクト
+      navigate(`/profile/${profile.nickname}`);
     } catch (error) {
       // エラーはProfileContextで管理されるため、ここでは何もしない
       console.error('プロフィール作成エラー:', error);

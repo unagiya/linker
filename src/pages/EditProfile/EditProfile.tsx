@@ -10,20 +10,27 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ProfileForm } from '../../components/ProfileForm';
 import type { ProfileFormData } from '../../types';
 import { LoadingSpinner, ErrorMessage } from '../../components/common';
+import { isUUID } from '../../utils/urlUtils';
 import './EditProfile.css';
 
 export function EditProfile() {
-  const { id } = useParams<{ id: string }>();
+  const { nickname } = useParams<{ nickname: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { loadProfile, updateProfile, loading, error, clearError } = useProfile();
+  const { profile, loadProfileByNickname, updateProfile, loading, error, clearError } = useProfile();
   const [initialData, setInitialData] = useState<ProfileFormData | undefined>();
   const [notFound, setNotFound] = useState(false);
   const [notOwner, setNotOwner] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      loadProfile(id).then((loadedProfile) => {
+    if (nickname) {
+      // UUID形式のURLは404エラーとして扱う（要件3.6）
+      if (isUUID(nickname)) {
+        setNotFound(true);
+        return;
+      }
+
+      loadProfileByNickname(nickname).then((loadedProfile) => {
         if (!loadedProfile) {
           setNotFound(true);
         } else if (user && loadedProfile.user_id !== user.id) {
@@ -32,6 +39,7 @@ export function EditProfile() {
         } else {
           // プロフィールデータをフォームデータに変換
           const formData: ProfileFormData = {
+            nickname: loadedProfile.nickname,
             name: loadedProfile.name,
             jobTitle: loadedProfile.jobTitle,
             bio: loadedProfile.bio || '',
@@ -46,23 +54,23 @@ export function EditProfile() {
         }
       });
     }
-  }, [id, loadProfile, user]);
+  }, [nickname, loadProfileByNickname, user]);
 
   const handleSubmit = async (data: ProfileFormData) => {
-    if (!id) return;
+    if (!profile?.id) return;
 
     try {
-      await updateProfile(id, data);
-      // 更新成功時、プロフィール詳細ページにリダイレクト
-      navigate(`/profile/${id}`);
+      const updatedProfile = await updateProfile(profile.id, data);
+      // 更新成功時、新しいニックネームベースURLにリダイレクト（要件4.5）
+      navigate(`/profile/${updatedProfile.nickname}`);
     } catch (err) {
       console.error('プロフィール更新エラー:', err);
     }
   };
 
   const handleCancel = () => {
-    if (id) {
-      navigate(`/profile/${id}`);
+    if (profile?.nickname) {
+      navigate(`/profile/${profile.nickname}`);
     } else {
       navigate('/');
     }
@@ -102,7 +110,7 @@ export function EditProfile() {
           </p>
           <button
             className="edit-profile-not-found-button"
-            onClick={() => navigate(id ? `/profile/${id}` : '/')}
+            onClick={() => navigate(profile?.nickname ? `/profile/${profile.nickname}` : '/')}
           >
             プロフィールページに戻る
           </button>

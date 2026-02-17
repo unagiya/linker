@@ -9,32 +9,39 @@ import { useProfile } from '../../contexts/ProfileContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { ProfileCard } from '../../components/ProfileCard';
 import { LoadingSpinner, ErrorMessage, ConfirmDialog } from '../../components/common';
+import { isUUID } from '../../utils/urlUtils';
 import './ViewProfile.css';
 
 export function ViewProfile() {
-  const { id } = useParams<{ id: string }>();
+  const { nickname } = useParams<{ nickname: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { profile, loadProfile, deleteProfile, loading, error, clearError } = useProfile();
+  const { profile, loadProfileByNickname, deleteProfile, loading, error, clearError } = useProfile();
   const [notFound, setNotFound] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      loadProfile(id).then((loadedProfile) => {
+    if (nickname) {
+      // UUID形式のURLは404エラーとして扱う（要件3.6）
+      if (isUUID(nickname)) {
+        setNotFound(true);
+        return;
+      }
+
+      loadProfileByNickname(nickname).then((loadedProfile) => {
         if (!loadedProfile) {
           setNotFound(true);
         }
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [nickname]);
 
   const handleEdit = () => {
-    if (id) {
-      navigate(`/profile/${id}/edit`);
+    if (profile?.nickname) {
+      navigate(`/profile/${profile.nickname}/edit`);
     }
   };
 
@@ -43,11 +50,11 @@ export function ViewProfile() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!id) return;
+    if (!profile?.id) return;
 
     setIsDeleting(true);
     try {
-      await deleteProfile(id);
+      await deleteProfile(profile.id);
       // 削除成功時、ホームページにリダイレクト
       navigate('/');
     } catch (err) {
@@ -62,9 +69,10 @@ export function ViewProfile() {
   };
 
   const handleShare = async () => {
-    if (!id) return;
+    if (!profile?.nickname) return;
 
-    const url = `${window.location.origin}/profile/${id}`;
+    // ニックネームベースURLを共有URLとして使用（要件3.3）
+    const url = `${window.location.origin}/profile/${profile.nickname}`;
 
     try {
       await navigator.clipboard.writeText(url);

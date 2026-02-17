@@ -43,9 +43,9 @@ export function App() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="/profile/:id" element={<ViewProfile />} />
+                  <Route path="/profile/:nickname" element={<ViewProfile />} />
                   <Route
-                    path="/profile/:id/edit"
+                    path="/profile/:nickname/edit"
                     element={
                       <ProtectedRoute>
                         <EditProfile />
