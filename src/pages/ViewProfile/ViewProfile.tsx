@@ -9,6 +9,8 @@ import { useProfile } from '../../contexts/ProfileContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { ProfileCard } from '../../components/ProfileCard';
 import { LoadingSpinner, ErrorMessage, ConfirmDialog } from '../../components/common';
+import { SEO } from '../../components/SEO';
+import { generateSEOMetadata } from '../../utils/seoUtils';
 import { isUUID } from '../../utils/urlUtils';
 import './ViewProfile.css';
 
@@ -38,20 +40,6 @@ export function ViewProfile() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nickname]);
-
-  // ページタイトルの動的設定（要件8.1）
-  useEffect(() => {
-    if (profile?.name) {
-      document.title = `${profile.name} | Linker`;
-    } else {
-      document.title = 'Linker';
-    }
-
-    // クリーンアップ
-    return () => {
-      document.title = 'Linker';
-    };
-  }, [profile?.name]);
 
   const handleEdit = () => {
     if (profile?.nickname) {
@@ -125,8 +113,15 @@ export function ViewProfile() {
     return null;
   }
 
+  // SEOメタデータの生成（要件8.1, 8.2, 8.3, 8.4）
+  const currentUrl = `${window.location.origin}/profile/${profile.nickname}`;
+  const seoMetadata = generateSEOMetadata(profile, currentUrl);
+
   return (
     <div className="view-profile">
+      {/* SEOメタデータの設定 */}
+      <SEO metadata={seoMetadata} />
+
       <div className="view-profile-container">
         {error && <ErrorMessage message={error} onClose={clearError} />}
 
