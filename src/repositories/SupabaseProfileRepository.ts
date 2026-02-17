@@ -178,25 +178,24 @@ export class SupabaseProfileRepository implements ProfileRepository {
    * ニックネームでプロフィールを検索する
    * 大文字小文字を区別しない検索を行う
    * リトライ機能とタイムアウト機能を備えた堅牢な実装
+   * 
+   * パフォーマンス最適化:
+   * - データベース関数を使用して検索を最適化
+   * - インデックスを活用した高速検索
    */
   async findByNickname(nickname: string): Promise<Profile | null> {
     try {
       const searchByNickname = async () => {
+        // データベース関数を使用して最適化された検索を実行
         const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .ilike('nickname', nickname)
-          .single();
+          .rpc('find_profile_by_nickname', { nickname_param: nickname });
 
         if (error) {
-          // PGRST116は「行が見つからない」エラー
-          if (error.code === 'PGRST116') {
-            return null;
-          }
           throw error;
         }
 
-        return data;
+        // データベース関数は配列を返すので、最初の要素を取得
+        return data && data.length > 0 ? data[0] : null;
       };
 
       const data = await withRetry(
