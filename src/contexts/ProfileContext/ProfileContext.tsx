@@ -7,6 +7,7 @@ import React, { createContext, useContext, useReducer, useCallback } from 'react
 import type { Profile, ProfileFormData } from '../../types/profile';
 import type { ProfileRepository } from '../../repositories/ProfileRepository';
 import { uploadProfileImage, deleteProfileImage } from '../../services/imageService';
+import { checkNicknameAvailability } from '../../services/nicknameService';
 
 /**
  * プロフィール状態の型
@@ -43,6 +44,8 @@ interface ProfileContextValue extends ProfileState {
   loadProfile: (id: string) => Promise<Profile | null>;
   /** 自分のプロフィール読み込み */
   loadMyProfile: (userId: string) => Promise<Profile | null>;
+  /** ニックネームでプロフィール読み込み */
+  loadProfileByNickname: (nickname: string) => Promise<Profile | null>;
   /** エラークリア */
   clearError: () => void;
 }
@@ -117,6 +120,12 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
 
+      // ニックネームの利用可能性チェック
+      const availabilityResult = await checkNicknameAvailability(data.nickname);
+      if (!availabilityResult.isAvailable) {
+        throw new Error(availabilityResult.error || 'このニックネームは使用できません');
+      }
+
       // 画像アップロード処理
       let imageUrl: string | undefined = undefined;
       if (data.imageFile) {
@@ -177,6 +186,17 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
       const existingProfile = await repository.findById(id);
       if (!existingProfile) {
         throw new Error('プロフィールが見つかりません');
+      }
+
+      // ニックネームが変更された場合、利用可能性チェック
+      if (data.nickname !== existingProfile.nickname) {
+        const availabilityResult = await checkNicknameAvailability(
+          data.nickname,
+          existingProfile.nickname
+        );
+        if (!availabilityResult.isAvailable) {
+          throw new Error(availabilityResult.error || 'このニックネームは使用できません');
+        }
       }
 
       // 画像処理
@@ -319,6 +339,27 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
   }, [repository]);
 
   /**
+   * ニックネームでプロフィール読み込み
+   */
+  const loadProfileByNickname = useCallback(async (nickname: string): Promise<Profile | null> => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' });
+
+      const profile = await repository.findByNickname(nickname);
+
+      dispatch({ type: 'SET_PROFILE', payload: profile });
+
+      return profile;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'プロフィールの読み込みに失敗しました';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      throw error;
+    }
+  }, [repository]);
+
+  /**
    * エラークリア
    */
   const clearError = useCallback(() => {
@@ -332,6 +373,7 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
     deleteProfile,
     loadProfile,
     loadMyProfile,
+    loadProfileByNickname,
     clearError,
   };
 

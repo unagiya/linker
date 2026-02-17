@@ -9,6 +9,13 @@ import type { ReactNode } from 'react';
 import type { ProfileRepository } from '../../repositories/ProfileRepository';
 import type { Profile } from '../../types/profile';
 
+// nicknameServiceのモック
+vi.mock('../../services/nicknameService', () => ({
+  checkNicknameAvailability: vi.fn(),
+}));
+
+import { checkNicknameAvailability } from '../../services/nicknameService';
+
 describe('ProfileContext', () => {
   let mockRepository: ProfileRepository;
 
@@ -23,6 +30,12 @@ describe('ProfileContext', () => {
       delete: vi.fn(),
       exists: vi.fn(),
     };
+
+    // nicknameServiceのモックをリセット
+    vi.mocked(checkNicknameAvailability).mockResolvedValue({
+      isAvailable: true,
+      isChecking: false,
+    });
   });
 
   const wrapper =
@@ -84,6 +97,40 @@ describe('ProfileContext', () => {
       expect(result.current.profile).toEqual(createdProfile);
       expect(result.current.error).toBeNull();
       expect(mockRepository.save).toHaveBeenCalledWith(createdProfile);
+      expect(checkNicknameAvailability).toHaveBeenCalledWith('yamada-taro');
+    });
+
+    it('ニックネームが既に使用されている場合、エラーを返す', async () => {
+      vi.mocked(checkNicknameAvailability).mockResolvedValue({
+        isAvailable: false,
+        isChecking: false,
+        error: 'このニックネームは既に使用されています',
+      });
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
+      });
+
+      const formData = {
+        nickname: 'existing-nickname',
+        name: '山田太郎',
+        jobTitle: 'エンジニア',
+        bio: '',
+        skills: [],
+        yearsOfExperience: '',
+        socialLinks: [],
+      };
+
+      await act(async () => {
+        try {
+          await result.current.createProfile('user-123', formData);
+        } catch (_error) {
+          expect(_error).toBeDefined();
+        }
+      });
+
+      expect(result.current.error).toBe('このニックネームは既に使用されています');
+      expect(mockRepository.save).not.toHaveBeenCalled();
     });
 
     it('bioが空文字列の場合、undefinedに変換される', async () => {
@@ -190,6 +237,91 @@ describe('ProfileContext', () => {
       expect(result.current.profile).toEqual(updatedProfile);
       expect(result.current.error).toBeNull();
       expect(mockRepository.save).toHaveBeenCalledWith(updatedProfile);
+      expect(checkNicknameAvailability).toHaveBeenCalledWith('yamada-hanako', 'yamada-taro-existing');
+    });
+
+    it('ニックネームが変更されない場合、利用可能性チェックをスキップする', async () => {
+      const existingProfile: Profile = {
+        id: 'profile-123',
+        user_id: 'user-123',
+        nickname: 'yamada-taro',
+        name: '山田太郎',
+        jobTitle: 'エンジニア',
+        skills: [],
+        socialLinks: [],
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+      };
+
+      vi.mocked(mockRepository.findById).mockResolvedValue(existingProfile);
+      vi.mocked(mockRepository.save).mockResolvedValue();
+      vi.mocked(checkNicknameAvailability).mockClear();
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
+      });
+
+      const formData = {
+        nickname: 'yamada-taro', // 同じニックネーム
+        name: '山田太郎',
+        jobTitle: 'シニアエンジニア',
+        bio: '更新されました',
+        skills: ['React'],
+        yearsOfExperience: '10',
+        socialLinks: [],
+      };
+
+      await act(async () => {
+        await result.current.updateProfile('profile-123', formData);
+      });
+
+      expect(checkNicknameAvailability).not.toHaveBeenCalled();
+    });
+
+    it('ニックネームが既に使用されている場合、エラーを返す', async () => {
+      const existingProfile: Profile = {
+        id: 'profile-123',
+        user_id: 'user-123',
+        nickname: 'yamada-taro',
+        name: '山田太郎',
+        jobTitle: 'エンジニア',
+        skills: [],
+        socialLinks: [],
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+      };
+
+      vi.mocked(mockRepository.findById).mockResolvedValue(existingProfile);
+      vi.mocked(checkNicknameAvailability).mockResolvedValue({
+        isAvailable: false,
+        isChecking: false,
+        error: 'このニックネームは既に使用されています',
+      });
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
+      });
+
+      const formData = {
+        nickname: 'existing-nickname',
+        name: '山田太郎',
+        jobTitle: 'エンジニア',
+        bio: '',
+        skills: [],
+        yearsOfExperience: '',
+        socialLinks: [],
+      };
+
+      await act(async () => {
+        try {
+          await result.current.updateProfile('profile-123', formData);
+        } catch (_error) {
+          expect(_error).toBeDefined();
+        }
+      });
+
+      expect(result.current.error).toBe('このニックネームは既に使用されています');
+      expect(mockRepository.save).not.toHaveBeenCalled();
     });
 
     it('存在しないプロフィールを更新しようとするとエラーになる', async () => {
@@ -429,6 +561,75 @@ describe('ProfileContext', () => {
       await act(async () => {
         try {
           await result.current.loadMyProfile('user-123');
+        } catch (_error) {
+          expect(_error).toBeDefined();
+          // エラーが発生することを期待
+        }
+      });
+
+      expect(result.current.error).toBe('読み込みエラー');
+    });
+  });
+
+  describe('loadProfileByNickname', () => {
+    it('ニックネームでプロフィールを読み込める', async () => {
+      const mockProfile: Profile = {
+        id: 'profile-123',
+        user_id: 'user-123',
+        nickname: 'yamada-taro',
+        name: '山田太郎',
+        jobTitle: 'エンジニア',
+        skills: [],
+        socialLinks: [],
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+      };
+
+      vi.mocked(mockRepository.findByNickname).mockResolvedValue(mockProfile);
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
+      });
+
+      let loadedProfile: Profile | null | undefined;
+
+      await act(async () => {
+        loadedProfile = await result.current.loadProfileByNickname('yamada-taro');
+      });
+
+      expect(loadedProfile).toEqual(mockProfile);
+      expect(result.current.profile).toEqual(mockProfile);
+      expect(result.current.error).toBeNull();
+      expect(mockRepository.findByNickname).toHaveBeenCalledWith('yamada-taro');
+    });
+
+    it('存在しないニックネームの場合、nullを返す', async () => {
+      vi.mocked(mockRepository.findByNickname).mockResolvedValue(null);
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
+      });
+
+      let loadedProfile: Profile | null | undefined;
+
+      await act(async () => {
+        loadedProfile = await result.current.loadProfileByNickname('nonexistent');
+      });
+
+      expect(loadedProfile).toBeNull();
+      expect(result.current.profile).toBeNull();
+    });
+
+    it('プロフィール読み込みが失敗した場合、エラーを設定する', async () => {
+      vi.mocked(mockRepository.findByNickname).mockRejectedValue(new Error('読み込みエラー'));
+
+      const { result } = renderHook(() => useProfile(), {
+        wrapper: wrapper(mockRepository),
+      });
+
+      await act(async () => {
+        try {
+          await result.current.loadProfileByNickname('yamada-taro');
         } catch (_error) {
           expect(_error).toBeDefined();
           // エラーが発生することを期待

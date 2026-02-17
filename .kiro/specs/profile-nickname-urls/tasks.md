@@ -209,7 +209,7 @@
   - 重複チェック機能のテスト
   - _要件: 3.1, 4.4_
 
-- [ ] 10. ProfileContextの拡張
+- [x] 10. ProfileContextの拡張
   - 既存のProfileContextを拡張
   - createProfile関数でニックネーム処理を追加
   - updateProfile関数でニックネーム変更処理を追加
