@@ -4,6 +4,8 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { toAppError, NotFoundError, DuplicateError } from '../types/errors';
+import { withRetry, withTimeout } from '../utils/errorHandling';
 import type { Profile } from '../types/profile';
 import type { ProfileRow, ProfileInsert, ProfileUpdate } from '../types/database';
 import type { ProfileRepository } from './ProfileRepository';
@@ -15,197 +17,366 @@ export class SupabaseProfileRepository implements ProfileRepository {
   /**
    * プロフィールを保存する
    * 既存のプロフィールがある場合は更新、ない場合は新規作成
+   * リトライ機能とタイムアウト機能を備えた堅牢な実装
    */
   async save(profile: Profile): Promise<void> {
-    // 既存のプロフィールがあるか確認
-    const existing = await this.findById(profile.id);
+    try {
+      // 既存のプロフィールがあるか確認
+      const existing = await this.findById(profile.id);
 
-    if (existing) {
-      // 更新
-      const updateData: ProfileUpdate = {
-        nickname: profile.nickname,
-        name: profile.name,
-        job_title: profile.jobTitle,
-        bio: profile.bio || null,
-        image_url: profile.imageUrl || null,
-        skills: profile.skills,
-        years_of_experience: profile.yearsOfExperience || null,
-        social_links: profile.socialLinks,
-        updated_at: profile.updatedAt,
+      const performSave = async () => {
+        if (existing) {
+          // 更新
+          const updateData: ProfileUpdate = {
+            nickname: profile.nickname,
+            name: profile.name,
+            job_title: profile.jobTitle,
+            bio: profile.bio || null,
+            image_url: profile.imageUrl || null,
+            skills: profile.skills,
+            years_of_experience: profile.yearsOfExperience || null,
+            social_links: profile.socialLinks,
+            updated_at: profile.updatedAt,
+          };
+
+          const { error } = await supabase.from('profiles').update(updateData).eq('id', profile.id);
+
+          if (error) {
+            // ニックネーム重複エラー
+            if (error.code === '23505') {
+              throw new DuplicateError('このニックネームは既に使用されています', error);
+            }
+            throw error;
+          }
+        } else {
+          // 新規作成
+          const insertData: ProfileInsert = {
+            id: profile.id,
+            user_id: profile.user_id,
+            nickname: profile.nickname,
+            name: profile.name,
+            job_title: profile.jobTitle,
+            bio: profile.bio || null,
+            image_url: profile.imageUrl || null,
+            skills: profile.skills,
+            years_of_experience: profile.yearsOfExperience || null,
+            social_links: profile.socialLinks,
+            created_at: profile.createdAt,
+            updated_at: profile.updatedAt,
+          };
+
+          const { error } = await supabase.from('profiles').insert(insertData);
+
+          if (error) {
+            // ニックネーム重複エラー
+            if (error.code === '23505') {
+              throw new DuplicateError('このニックネームは既に使用されています', error);
+            }
+            throw error;
+          }
+        }
       };
 
-      const { error } = await supabase.from('profiles').update(updateData).eq('id', profile.id);
+      // タイムアウトとリトライ機能付きで保存
+      await withRetry(
+        () => withTimeout(performSave, 10000),
+        {
+          maxRetries: 2,
+          retryDelay: 1000,
+          exponentialBackoff: true,
+        }
+      );
 
-      if (error) {
-        throw new Error(`プロフィールの更新に失敗しました: ${error.message}`);
-      }
-    } else {
-      // 新規作成
-      const insertData: ProfileInsert = {
-        id: profile.id,
-        user_id: profile.user_id,
-        nickname: profile.nickname,
-        name: profile.name,
-        job_title: profile.jobTitle,
-        bio: profile.bio || null,
-        image_url: profile.imageUrl || null,
-        skills: profile.skills,
-        years_of_experience: profile.yearsOfExperience || null,
-        social_links: profile.socialLinks,
-        created_at: profile.createdAt,
-        updated_at: profile.updatedAt,
-      };
-
-      const { error } = await supabase.from('profiles').insert(insertData);
-
-      if (error) {
-        throw new Error(`プロフィールの作成に失敗しました: ${error.message}`);
-      }
+    } catch (error) {
+      const appError = toAppError(error);
+      appError.log();
+      throw appError;
     }
   }
 
   /**
    * IDでプロフィールを検索する
+   * リトライ機能とタイムアウト機能を備えた堅牢な実装
    */
   async findById(id: string): Promise<Profile | null> {
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
+    try {
+      const searchById = async () => {
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
 
-    if (error) {
-      // PGRST116は「行が見つからない」エラー
-      if (error.code === 'PGRST116') {
-        return null;
-      }
-      throw new Error(`プロフィールの取得に失敗しました: ${error.message}`);
+        if (error) {
+          // PGRST116は「行が見つからない」エラー
+          if (error.code === 'PGRST116') {
+            return null;
+          }
+          throw error;
+        }
+
+        return data;
+      };
+
+      const data = await withRetry(
+        () => withTimeout(searchById, 5000),
+        {
+          maxRetries: 2,
+          retryDelay: 1000,
+          exponentialBackoff: true,
+        }
+      );
+
+      return data ? this.mapToProfile(data) : null;
+
+    } catch (error) {
+      const appError = toAppError(error);
+      appError.log();
+      throw appError;
     }
-
-    return this.mapToProfile(data);
   }
 
   /**
    * ユーザーIDでプロフィールを検索する
+   * リトライ機能とタイムアウト機能を備えた堅牢な実装
    */
   async findByUserId(userId: string): Promise<Profile | null> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+    try {
+      const searchByUserId = async () => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
 
-    if (error) {
-      // PGRST116は「行が見つからない」エラー
-      if (error.code === 'PGRST116') {
-        return null;
-      }
-      throw new Error(`プロフィールの取得に失敗しました: ${error.message}`);
+        if (error) {
+          // PGRST116は「行が見つからない」エラー
+          if (error.code === 'PGRST116') {
+            return null;
+          }
+          throw error;
+        }
+
+        return data;
+      };
+
+      const data = await withRetry(
+        () => withTimeout(searchByUserId, 5000),
+        {
+          maxRetries: 2,
+          retryDelay: 1000,
+          exponentialBackoff: true,
+        }
+      );
+
+      return data ? this.mapToProfile(data) : null;
+
+    } catch (error) {
+      const appError = toAppError(error);
+      appError.log();
+      throw appError;
     }
-
-    return this.mapToProfile(data);
   }
 
   /**
    * ニックネームでプロフィールを検索する
    * 大文字小文字を区別しない検索を行う
+   * リトライ機能とタイムアウト機能を備えた堅牢な実装
    */
   async findByNickname(nickname: string): Promise<Profile | null> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .ilike('nickname', nickname)
-      .single();
+    try {
+      const searchByNickname = async () => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .ilike('nickname', nickname)
+          .single();
 
-    if (error) {
-      // PGRST116は「行が見つからない」エラー
-      if (error.code === 'PGRST116') {
-        return null;
-      }
-      throw new Error(`プロフィールの取得に失敗しました: ${error.message}`);
+        if (error) {
+          // PGRST116は「行が見つからない」エラー
+          if (error.code === 'PGRST116') {
+            return null;
+          }
+          throw error;
+        }
+
+        return data;
+      };
+
+      const data = await withRetry(
+        () => withTimeout(searchByNickname, 5000),
+        {
+          maxRetries: 2,
+          retryDelay: 1000,
+          exponentialBackoff: true,
+        }
+      );
+
+      return data ? this.mapToProfile(data) : null;
+
+    } catch (error) {
+      const appError = toAppError(error);
+      appError.log();
+      throw appError;
     }
-
-    return this.mapToProfile(data);
   }
 
   /**
    * ニックネームが利用可能かチェックする
    * 大文字小文字を区別しない重複チェックを行う
+   * リトライ機能とタイムアウト機能を備えた堅牢な実装
    * 
    * @param nickname - チェックするニックネーム
    * @param excludeUserId - 除外するユーザーID（編集時に現在のユーザーを除外）
    * @returns 利用可能な場合はtrue、既に使用されている場合はfalse
    */
   async isNicknameAvailable(nickname: string, excludeUserId?: string): Promise<boolean> {
-    let query = supabase
-      .from('profiles')
-      .select('id')
-      .ilike('nickname', nickname);
+    try {
+      const checkAvailability = async () => {
+        let query = supabase
+          .from('profiles')
+          .select('id')
+          .ilike('nickname', nickname);
 
-    // 編集時は現在のユーザーを除外
-    if (excludeUserId) {
-      query = query.neq('user_id', excludeUserId);
+        // 編集時は現在のユーザーを除外
+        if (excludeUserId) {
+          query = query.neq('user_id', excludeUserId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          throw error;
+        }
+
+        // データが存在しない場合は利用可能
+        return data.length === 0;
+      };
+
+      return await withRetry(
+        () => withTimeout(checkAvailability, 5000),
+        {
+          maxRetries: 2,
+          retryDelay: 1000,
+          exponentialBackoff: true,
+        }
+      );
+
+    } catch (error) {
+      const appError = toAppError(error);
+      appError.log();
+      throw appError;
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error(`ニックネームの利用可能性チェックに失敗しました: ${error.message}`);
-    }
-
-    // データが存在しない場合は利用可能
-    return data.length === 0;
   }
 
   /**
    * ニックネームの重複をチェックする
    * 大文字小文字を区別しない重複チェックを行う
+   * リトライ機能とタイムアウト機能を備えた堅牢な実装
    * 
    * @param nickname - チェックするニックネーム
    * @param excludeProfileId - 除外するプロフィールID（編集時に現在のプロフィールを除外）
    * @returns 重複している場合はtrue、していない場合はfalse
    */
   async checkNicknameDuplicate(nickname: string, excludeProfileId?: string): Promise<boolean> {
-    let query = supabase
-      .from('profiles')
-      .select('id')
-      .ilike('nickname', nickname);
+    try {
+      const checkDuplicate = async () => {
+        let query = supabase
+          .from('profiles')
+          .select('id')
+          .ilike('nickname', nickname);
 
-    // 編集時は現在のプロフィールを除外
-    if (excludeProfileId) {
-      query = query.neq('id', excludeProfileId);
+        // 編集時は現在のプロフィールを除外
+        if (excludeProfileId) {
+          query = query.neq('id', excludeProfileId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          throw error;
+        }
+
+        // データが存在する場合は重複している
+        return data.length > 0;
+      };
+
+      return await withRetry(
+        () => withTimeout(checkDuplicate, 5000),
+        {
+          maxRetries: 2,
+          retryDelay: 1000,
+          exponentialBackoff: true,
+        }
+      );
+
+    } catch (error) {
+      const appError = toAppError(error);
+      appError.log();
+      throw appError;
     }
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error(`ニックネームの重複チェックに失敗しました: ${error.message}`);
-    }
-
-    // データが存在する場合は重複している
-    return data.length > 0;
   }
 
   /**
    * すべてのプロフィールを取得する
+   * リトライ機能とタイムアウト機能を備えた堅牢な実装
    */
   async findAll(): Promise<Profile[]> {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const fetchAll = async () => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-    if (error) {
-      throw new Error(`プロフィール一覧の取得に失敗しました: ${error.message}`);
+        if (error) {
+          throw error;
+        }
+
+        return data;
+      };
+
+      const data = await withRetry(
+        () => withTimeout(fetchAll, 10000),
+        {
+          maxRetries: 2,
+          retryDelay: 1000,
+          exponentialBackoff: true,
+        }
+      );
+
+      return data.map((row) => this.mapToProfile(row));
+
+    } catch (error) {
+      const appError = toAppError(error);
+      appError.log();
+      throw appError;
     }
-
-    return data.map((row) => this.mapToProfile(row));
   }
 
   /**
    * プロフィールを削除する
+   * リトライ機能とタイムアウト機能を備えた堅牢な実装
    */
   async delete(id: string): Promise<void> {
-    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    try {
+      const performDelete = async () => {
+        const { error } = await supabase.from('profiles').delete().eq('id', id);
 
-    if (error) {
-      throw new Error(`プロフィールの削除に失敗しました: ${error.message}`);
+        if (error) {
+          throw error;
+        }
+      };
+
+      await withRetry(
+        () => withTimeout(performDelete, 5000),
+        {
+          maxRetries: 2,
+          retryDelay: 1000,
+          exponentialBackoff: true,
+        }
+      );
+
+    } catch (error) {
+      const appError = toAppError(error);
+      appError.log();
+      throw appError;
     }
   }
 

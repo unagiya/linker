@@ -8,6 +8,8 @@ import type { Profile, ProfileFormData } from '../../types/profile';
 import type { ProfileRepository } from '../../repositories/ProfileRepository';
 import { uploadProfileImage, deleteProfileImage } from '../../services/imageService';
 import { checkNicknameAvailability } from '../../services/nicknameService';
+import { toAppError } from '../../types/errors';
+import { getErrorMessage } from '../../utils/errorUtils';
 
 /**
  * プロフィール状態の型
@@ -114,6 +116,7 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
 
   /**
    * プロフィール作成
+   * エラーハンドリングを強化した実装
    */
   const createProfile = useCallback(async (userId: string, data: ProfileFormData): Promise<Profile> => {
     try {
@@ -123,7 +126,9 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
       // ニックネームの利用可能性チェック
       const availabilityResult = await checkNicknameAvailability(data.nickname);
       if (!availabilityResult.isAvailable) {
-        throw new Error(availabilityResult.error || 'このニックネームは使用できません');
+        const errorMessage = availabilityResult.error || 'このニックネームは使用できません';
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
+        throw new Error(errorMessage);
       }
 
       // 画像アップロード処理
@@ -167,15 +172,19 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
 
       return profile;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'プロフィールの作成に失敗しました';
+      const errorMessage = getErrorMessage(error);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw error;
+      
+      const appError = toAppError(error);
+      appError.log();
+      
+      throw appError;
     }
   }, [repository]);
 
   /**
    * プロフィール更新
+   * エラーハンドリングを強化した実装
    */
   const updateProfile = useCallback(async (id: string, data: ProfileFormData): Promise<Profile> => {
     try {
@@ -185,7 +194,9 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
       // 既存のプロフィールを取得
       const existingProfile = await repository.findById(id);
       if (!existingProfile) {
-        throw new Error('プロフィールが見つかりません');
+        const errorMessage = 'プロフィールが見つかりません';
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
+        throw new Error(errorMessage);
       }
 
       // ニックネームが変更された場合、利用可能性チェック
@@ -195,7 +206,9 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
           existingProfile.nickname
         );
         if (!availabilityResult.isAvailable) {
-          throw new Error(availabilityResult.error || 'このニックネームは使用できません');
+          const errorMessage = availabilityResult.error || 'このニックネームは使用できません';
+          dispatch({ type: 'SET_ERROR', payload: errorMessage });
+          throw new Error(errorMessage);
         }
       }
 
@@ -260,15 +273,19 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
 
       return updatedProfile;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'プロフィールの更新に失敗しました';
+      const errorMessage = getErrorMessage(error);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw error;
+      
+      const appError = toAppError(error);
+      appError.log();
+      
+      throw appError;
     }
   }, [repository]);
 
   /**
    * プロフィール削除
+   * エラーハンドリングを強化した実装
    */
   const deleteProfile = useCallback(async (id: string): Promise<void> => {
     try {
@@ -289,15 +306,19 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
 
       dispatch({ type: 'SET_PROFILE', payload: null });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'プロフィールの削除に失敗しました';
+      const errorMessage = getErrorMessage(error);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw error;
+      
+      const appError = toAppError(error);
+      appError.log();
+      
+      throw appError;
     }
   }, [repository]);
 
   /**
    * プロフィール読み込み
+   * エラーハンドリングを強化した実装
    */
   const loadProfile = useCallback(async (id: string): Promise<Profile | null> => {
     try {
@@ -310,15 +331,19 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
 
       return profile;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'プロフィールの読み込みに失敗しました';
+      const errorMessage = getErrorMessage(error);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw error;
+      
+      const appError = toAppError(error);
+      appError.log();
+      
+      throw appError;
     }
   }, [repository]);
 
   /**
    * 自分のプロフィール読み込み
+   * エラーハンドリングを強化した実装
    */
   const loadMyProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     try {
@@ -331,15 +356,19 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
 
       return profile;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'プロフィールの読み込みに失敗しました';
+      const errorMessage = getErrorMessage(error);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw error;
+      
+      const appError = toAppError(error);
+      appError.log();
+      
+      throw appError;
     }
   }, [repository]);
 
   /**
    * ニックネームでプロフィール読み込み
+   * エラーハンドリングを強化した実装
    */
   const loadProfileByNickname = useCallback(async (nickname: string): Promise<Profile | null> => {
     try {
@@ -352,10 +381,13 @@ export function ProfileProvider({ children, repository }: ProfileProviderProps) 
 
       return profile;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'プロフィールの読み込みに失敗しました';
+      const errorMessage = getErrorMessage(error);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      throw error;
+      
+      const appError = toAppError(error);
+      appError.log();
+      
+      throw appError;
     }
   }, [repository]);
 

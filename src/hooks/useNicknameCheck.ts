@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { validateNickname } from '../utils/nicknameValidation';
 import { checkNicknameAvailability } from '../services/nicknameService';
 import { useDebounce } from './useDebounce';
+import { getErrorMessage, isNetworkError } from '../utils/errorUtils';
 import type { NicknameValidationResult, NicknameAvailabilityResult } from '../types/nickname';
 
 /**
@@ -147,9 +148,17 @@ export function useNicknameCheck(
           return; // 古いリクエストの結果は無視
         }
 
+        // エラーメッセージを取得
+        const errorMessage = getErrorMessage(error);
+        
+        // ネットワークエラーの場合は特別なメッセージ
+        const message = isNetworkError(error)
+          ? '接続エラーが発生しました。再試行してください'
+          : errorMessage;
+
         setResult({
           status: 'error',
-          message: 'チェック中にエラーが発生しました',
+          message,
           isValid: true,
           isAvailable: false
         });

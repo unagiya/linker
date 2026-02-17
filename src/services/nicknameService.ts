@@ -4,11 +4,14 @@
 
 import { supabase } from '../lib/supabase';
 import { normalizeNickname, isReservedNickname } from '../utils/nicknameValidation';
+import { toAppError, ValidationError, DuplicateError } from '../types/errors';
+import { withRetry, withTimeout } from '../utils/errorHandling';
 import type { Profile } from '../types/profile';
 import type { NicknameAvailabilityResult } from '../types/nickname';
 
 /**
  * ニックネーム利用可能性チェック
+ * リトライ機能とタイムアウト機能を備えた堅牢な実装
  * 
  * @param nickname - チェックするニックネーム
  * @param currentNickname - 現在のニックネーム（編集時の除外用）
@@ -40,21 +43,29 @@ export async function checkNicknameAvailability(
       };
     }
 
-    // データベースで重複チェック（大文字小文字を区別しない）
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('nickname')
-      .ilike('nickname', normalizedNickname)
-      .limit(1);
+    // タイムアウトとリトライ機能付きでデータベースチェック
+    const checkDatabase = async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('nickname')
+        .ilike('nickname', normalizedNickname)
+        .limit(1);
 
-    if (error) {
-      console.error('ニックネーム利用可能性チェックエラー:', error);
-      return {
-        isAvailable: false,
-        isChecking: false,
-        error: 'サーバーエラーが発生しました。しばらく待ってから再試行してください'
-      };
-    }
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    };
+
+    const data = await withRetry(
+      () => withTimeout(checkDatabase, 5000),
+      {
+        maxRetries: 2,
+        retryDelay: 1000,
+        exponentialBackoff: true,
+      }
+    );
 
     const isAvailable = data.length === 0;
     return {
@@ -64,17 +75,20 @@ export async function checkNicknameAvailability(
     };
 
   } catch (error) {
-    console.error('ニックネーム利用可能性チェック例外:', error);
+    const appError = toAppError(error);
+    appError.log();
+    
     return {
       isAvailable: false,
       isChecking: false,
-      error: '接続エラーが発生しました。再試行してください'
+      error: appError.getUserMessage()
     };
   }
 }
 
 /**
  * ニックネームでプロフィール検索
+ * リトライ機能とタイムアウト機能を備えた堅牢な実装
  * 
  * @param nickname - 検索するニックネーム
  * @returns プロフィール（見つからない場合はnull）
@@ -83,31 +97,44 @@ export async function findProfileByNickname(nickname: string): Promise<Profile |
   try {
     const normalizedNickname = normalizeNickname(nickname);
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .ilike('nickname', normalizedNickname)
-      .single();
+    const searchProfile = async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('nickname', normalizedNickname)
+        .single();
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // データが見つからない場合
-        return null;
+      if (error) {
+        // データが見つからない場合はnullを返す（エラーではない）
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
       }
-      console.error('プロフィール検索エラー:', error);
-      throw new Error('プロフィールの検索に失敗しました');
-    }
 
-    return data;
+      return data;
+    };
+
+    // タイムアウトとリトライ機能付きで検索
+    return await withRetry(
+      () => withTimeout(searchProfile, 5000),
+      {
+        maxRetries: 2,
+        retryDelay: 1000,
+        exponentialBackoff: true,
+      }
+    );
 
   } catch (error) {
-    console.error('プロフィール検索例外:', error);
-    throw error;
+    const appError = toAppError(error);
+    appError.log();
+    throw appError;
   }
 }
 
 /**
  * ニックネーム更新
+ * リトライ機能とタイムアウト機能を備えた堅牢な実装
  * 
  * @param profileId - 更新するプロフィールのID
  * @param newNickname - 新しいニックネーム
@@ -116,28 +143,38 @@ export async function updateNickname(profileId: string, newNickname: string): Pr
   try {
     const normalizedNickname = normalizeNickname(newNickname);
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ 
-        nickname: normalizedNickname,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', profileId);
+    const performUpdate = async () => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          nickname: normalizedNickname,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', profileId);
 
-    if (error) {
-      console.error('ニックネーム更新エラー:', error);
-      
-      // 制約違反エラーの場合
-      if (error.code === '23505') {
-        throw new Error('このニックネームは既に使用されています');
+      if (error) {
+        // 制約違反エラーの場合は重複エラーとして扱う
+        if (error.code === '23505') {
+          throw new DuplicateError('このニックネームは既に使用されています', error);
+        }
+        throw error;
       }
-      
-      throw new Error('ニックネームの更新に失敗しました');
-    }
+    };
+
+    // タイムアウトとリトライ機能付きで更新
+    await withRetry(
+      () => withTimeout(performUpdate, 5000),
+      {
+        maxRetries: 2,
+        retryDelay: 1000,
+        exponentialBackoff: true,
+      }
+    );
 
   } catch (error) {
-    console.error('ニックネーム更新例外:', error);
-    throw error;
+    const appError = toAppError(error);
+    appError.log();
+    throw appError;
   }
 }
 
