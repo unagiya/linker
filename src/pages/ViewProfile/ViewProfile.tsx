@@ -39,6 +39,20 @@ export function ViewProfile() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nickname]);
 
+  // ページタイトルの動的設定（要件8.1）
+  useEffect(() => {
+    if (profile?.name) {
+      document.title = `${profile.name} | Linker`;
+    } else {
+      document.title = 'Linker';
+    }
+
+    // クリーンアップ
+    return () => {
+      document.title = 'Linker';
+    };
+  }, [profile?.name]);
+
   const handleEdit = () => {
     if (profile?.nickname) {
       navigate(`/profile/${profile.nickname}/edit`);
