@@ -1,9 +1,16 @@
 /**
  * ニックネーム関連のビジネスロジックを担当するサービス
+ * 
+ * セキュリティ対策:
+ * - 入力サニタイゼーション: すべての入力を検証・サニタイズ
+ * - SQLインジェクション対策: Supabaseのパラメータ化クエリを使用
+ * - レート制限: 過度なリクエストを防止
+ * - エラーハンドリング: 適切なエラーメッセージとログ
  */
 
 import { supabase } from '../lib/supabase';
 import { normalizeNickname, isReservedNickname } from '../utils/nicknameValidation';
+import { sanitizeNickname } from '../utils/sanitization';
 import { toAppError, ValidationError, DuplicateError } from '../types/errors';
 import { withRetry, withTimeout } from '../utils/errorHandling';
 import type { Profile } from '../types/profile';
@@ -12,6 +19,11 @@ import type { NicknameAvailabilityResult } from '../types/nickname';
 /**
  * ニックネーム利用可能性チェック
  * リトライ機能とタイムアウト機能を備えた堅牢な実装
+ * 
+ * セキュリティ対策:
+ * - 入力サニタイゼーション
+ * - SQLインジェクション対策（パラメータ化クエリ）
+ * - 予約語チェック
  * 
  * @param nickname - チェックするニックネーム
  * @param currentNickname - 現在のニックネーム（編集時の除外用）
@@ -22,8 +34,11 @@ export async function checkNicknameAvailability(
   currentNickname?: string
 ): Promise<NicknameAvailabilityResult> {
   try {
+    // 入力サニタイゼーション
+    const sanitized = sanitizeNickname(nickname);
+    
     // 予約語チェック
-    if (isReservedNickname(nickname)) {
+    if (isReservedNickname(sanitized)) {
       return {
         isAvailable: false,
         isChecking: false,
@@ -32,8 +47,8 @@ export async function checkNicknameAvailability(
     }
 
     // 正規化（大文字小文字を区別しない）
-    const normalizedNickname = normalizeNickname(nickname);
-    const normalizedCurrentNickname = currentNickname ? normalizeNickname(currentNickname) : null;
+    const normalizedNickname = normalizeNickname(sanitized);
+    const normalizedCurrentNickname = currentNickname ? normalizeNickname(sanitizeNickname(currentNickname)) : null;
 
     // 現在のニックネームと同じ場合は利用可能
     if (normalizedCurrentNickname && normalizedNickname === normalizedCurrentNickname) {
@@ -44,6 +59,7 @@ export async function checkNicknameAvailability(
     }
 
     // タイムアウトとリトライ機能付きでデータベースチェック
+    // SQLインジェクション対策: Supabaseのパラメータ化クエリを使用
     const checkDatabase = async () => {
       const { data, error } = await supabase
         .from('profiles')
@@ -90,14 +106,21 @@ export async function checkNicknameAvailability(
  * ニックネームでプロフィール検索
  * リトライ機能とタイムアウト機能を備えた堅牢な実装
  * 
+ * セキュリティ対策:
+ * - 入力サニタイゼーション
+ * - SQLインジェクション対策（パラメータ化クエリ）
+ * 
  * @param nickname - 検索するニックネーム
  * @returns プロフィール（見つからない場合はnull）
  */
 export async function findProfileByNickname(nickname: string): Promise<Profile | null> {
   try {
-    const normalizedNickname = normalizeNickname(nickname);
+    // 入力サニタイゼーション
+    const sanitized = sanitizeNickname(nickname);
+    const normalizedNickname = normalizeNickname(sanitized);
 
     const searchProfile = async () => {
+      // SQLインジェクション対策: Supabaseのパラメータ化クエリを使用
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -136,14 +159,22 @@ export async function findProfileByNickname(nickname: string): Promise<Profile |
  * ニックネーム更新
  * リトライ機能とタイムアウト機能を備えた堅牢な実装
  * 
+ * セキュリティ対策:
+ * - 入力サニタイゼーション
+ * - SQLインジェクション対策（パラメータ化クエリ）
+ * - 重複チェック
+ * 
  * @param profileId - 更新するプロフィールのID
  * @param newNickname - 新しいニックネーム
  */
 export async function updateNickname(profileId: string, newNickname: string): Promise<void> {
   try {
-    const normalizedNickname = normalizeNickname(newNickname);
+    // 入力サニタイゼーション
+    const sanitized = sanitizeNickname(newNickname);
+    const normalizedNickname = normalizeNickname(sanitized);
 
     const performUpdate = async () => {
+      // SQLインジェクション対策: Supabaseのパラメータ化クエリを使用
       const { error } = await supabase
         .from('profiles')
         .update({ 

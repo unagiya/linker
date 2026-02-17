@@ -1,5 +1,6 @@
 /**
  * ニックネーム関連の型定義
+ * 要件2: ニックネームバリデーション
  */
 
 /**
@@ -14,6 +15,7 @@ export interface NicknameValidationResult {
 
 /**
  * ニックネーム利用可能性チェック結果
+ * 要件5: ニックネーム利用可能性チェック
  */
 export interface NicknameAvailabilityResult {
   /** ニックネームが利用可能かどうか */
@@ -31,7 +33,7 @@ export type NicknameCheckStatus = 'idle' | 'checking' | 'available' | 'unavailab
 
 /**
  * 予約語リスト
- * これらのニックネームは使用できません
+ * 要件2.6: これらのニックネームは使用できません
  */
 export const RESERVED_NICKNAMES = [
   'admin', 'api', 'www', 'profile', 'signin', 'signup', 'login', 'logout',

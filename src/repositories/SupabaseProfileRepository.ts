@@ -1,11 +1,17 @@
 /**
  * SupabaseProfileRepository
  * Supabaseデータベースを使用したProfileRepositoryの実装
+ * 
+ * セキュリティ対策:
+ * - SQLインジェクション対策: Supabaseのパラメータ化クエリを使用
+ * - 入力サニタイゼーション: すべての入力を検証
+ * - エラーハンドリング: 適切なエラーメッセージとログ
  */
 
 import { supabase } from '../lib/supabase';
 import { toAppError, NotFoundError, DuplicateError } from '../types/errors';
 import { withRetry, withTimeout } from '../utils/errorHandling';
+import { sanitizeNickname } from '../utils/sanitization';
 import type { Profile } from '../types/profile';
 import type { ProfileRow, ProfileInsert, ProfileUpdate } from '../types/database';
 import type { ProfileRepository } from './ProfileRepository';
@@ -179,16 +185,24 @@ export class SupabaseProfileRepository implements ProfileRepository {
    * 大文字小文字を区別しない検索を行う
    * リトライ機能とタイムアウト機能を備えた堅牢な実装
    * 
+   * セキュリティ対策:
+   * - 入力サニタイゼーション
+   * - SQLインジェクション対策（パラメータ化クエリ）
+   * 
    * パフォーマンス最適化:
    * - データベース関数を使用して検索を最適化
    * - インデックスを活用した高速検索
    */
   async findByNickname(nickname: string): Promise<Profile | null> {
     try {
+      // 入力サニタイゼーション
+      const sanitized = sanitizeNickname(nickname);
+
       const searchByNickname = async () => {
+        // SQLインジェクション対策: Supabaseのパラメータ化クエリを使用
         // データベース関数を使用して最適化された検索を実行
         const { data, error } = await supabase
-          .rpc('find_profile_by_nickname', { nickname_param: nickname });
+          .rpc('find_profile_by_nickname', { nickname_param: sanitized });
 
         if (error) {
           throw error;
@@ -221,17 +235,25 @@ export class SupabaseProfileRepository implements ProfileRepository {
    * 大文字小文字を区別しない重複チェックを行う
    * リトライ機能とタイムアウト機能を備えた堅牢な実装
    * 
+   * セキュリティ対策:
+   * - 入力サニタイゼーション
+   * - SQLインジェクション対策（パラメータ化クエリ）
+   * 
    * @param nickname - チェックするニックネーム
    * @param excludeUserId - 除外するユーザーID（編集時に現在のユーザーを除外）
    * @returns 利用可能な場合はtrue、既に使用されている場合はfalse
    */
   async isNicknameAvailable(nickname: string, excludeUserId?: string): Promise<boolean> {
     try {
+      // 入力サニタイゼーション
+      const sanitized = sanitizeNickname(nickname);
+
       const checkAvailability = async () => {
+        // SQLインジェクション対策: Supabaseのパラメータ化クエリを使用
         let query = supabase
           .from('profiles')
           .select('id')
-          .ilike('nickname', nickname);
+          .ilike('nickname', sanitized);
 
         // 編集時は現在のユーザーを除外
         if (excludeUserId) {
@@ -269,17 +291,25 @@ export class SupabaseProfileRepository implements ProfileRepository {
    * 大文字小文字を区別しない重複チェックを行う
    * リトライ機能とタイムアウト機能を備えた堅牢な実装
    * 
+   * セキュリティ対策:
+   * - 入力サニタイゼーション
+   * - SQLインジェクション対策（パラメータ化クエリ）
+   * 
    * @param nickname - チェックするニックネーム
    * @param excludeProfileId - 除外するプロフィールID（編集時に現在のプロフィールを除外）
    * @returns 重複している場合はtrue、していない場合はfalse
    */
   async checkNicknameDuplicate(nickname: string, excludeProfileId?: string): Promise<boolean> {
     try {
+      // 入力サニタイゼーション
+      const sanitized = sanitizeNickname(nickname);
+
       const checkDuplicate = async () => {
+        // SQLインジェクション対策: Supabaseのパラメータ化クエリを使用
         let query = supabase
           .from('profiles')
           .select('id')
-          .ilike('nickname', nickname);
+          .ilike('nickname', sanitized);
 
         // 編集時は現在のプロフィールを除外
         if (excludeProfileId) {
