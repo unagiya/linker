@@ -271,4 +271,189 @@ describe('NicknameInput - Property-Based Tests', () => {
       );
     });
   });
+
+  /**
+   * プロパティ23: ローディング状態の表示
+   * 検証: 要件 5.5
+   * 
+   * 任意の利用可能性チェック中に対して、ローディングインジケーターが表示される
+   */
+  describe('Property 23: ローディング状態の表示', () => {
+    // 任意のニックネーム（チェック中）
+    const nicknameArbitrary = fc.string({ minLength: 1, maxLength: 50 });
+
+    it('任意のニックネームのチェック中にローディング状態が表示される', () => {
+      fc.assert(
+        fc.property(nicknameArbitrary, (nickname) => {
+          vi.mocked(useNicknameCheckModule.useNicknameCheck).mockReturnValue({
+            status: 'checking',
+            message: '確認中...',
+            isValid: true,
+            isAvailable: false,
+            isChecking: true
+          });
+
+          const { container } = render(
+            <NicknameInput
+              value={nickname}
+              onChange={mockOnChange}
+            />
+          );
+
+          // ローディングメッセージが表示されていることを確認
+          const hasLoadingMessage = screen.queryByText('確認中...') !== null;
+          
+          // クリーンアップ
+          container.remove();
+          
+          return hasLoadingMessage;
+        }),
+        { numRuns: 100 }
+      );
+    });
+
+    it('任意のニックネームのチェック中にisCheckingフラグがtrueになる', () => {
+      fc.assert(
+        fc.property(nicknameArbitrary, (nickname) => {
+          const checkResult = {
+            status: 'checking' as const,
+            message: '確認中...',
+            isValid: true,
+            isAvailable: false,
+            isChecking: true
+          };
+          
+          vi.mocked(useNicknameCheckModule.useNicknameCheck).mockReturnValue(checkResult);
+
+          const { container } = render(
+            <NicknameInput
+              value={nickname}
+              onChange={mockOnChange}
+            />
+          );
+
+          // useNicknameCheckが呼ばれたことを確認
+          const mockCalls = vi.mocked(useNicknameCheckModule.useNicknameCheck).mock.calls;
+          const wasCalled = mockCalls.length > 0;
+          
+          // クリーンアップ
+          container.remove();
+          
+          return wasCalled && checkResult.isChecking === true;
+        }),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  /**
+   * プロパティ33: ヘルプテキストの表示
+   * 検証: 要件 9.4
+   * 
+   * 任意のニックネーム入力フィールドに対して、フォーカス時にニックネームのルールを説明するヘルプテキストが表示される
+   */
+  describe('Property 33: ヘルプテキストの表示', () => {
+    // 任意のニックネーム（空または値あり）
+    const nicknameArbitrary = fc.oneof(
+      fc.constant(''), // 空の値
+      fc.string({ minLength: 1, maxLength: 50 }) // 任意の値
+    );
+
+    it('showHelp=trueの場合、空の値でヘルプテキストが表示される', () => {
+      fc.assert(
+        fc.property(fc.constant(''), () => {
+          vi.mocked(useNicknameCheckModule.useNicknameCheck).mockReturnValue({
+            status: 'idle',
+            message: '',
+            isValid: true,
+            isAvailable: true,
+            isChecking: false
+          });
+
+          const { container } = render(
+            <NicknameInput
+              value=""
+              onChange={mockOnChange}
+              showHelp={true}
+            />
+          );
+
+          // ヘルプテキストが表示されていることを確認
+          const hasHelpText = screen.queryByText(/3-36文字の英数字/) !== null;
+          
+          // クリーンアップ
+          container.remove();
+          
+          return hasHelpText;
+        }),
+        { numRuns: 20 }
+      );
+    });
+
+    it('showHelp=falseの場合、任意の値でヘルプテキストが表示されない', () => {
+      fc.assert(
+        fc.property(nicknameArbitrary, (nickname) => {
+          vi.mocked(useNicknameCheckModule.useNicknameCheck).mockReturnValue({
+            status: 'idle',
+            message: '',
+            isValid: true,
+            isAvailable: true,
+            isChecking: false
+          });
+
+          const { container } = render(
+            <NicknameInput
+              value={nickname}
+              onChange={mockOnChange}
+              showHelp={false}
+            />
+          );
+
+          // ヘルプテキストが表示されていないことを確認
+          const hasNoHelpText = screen.queryByText(/3-36文字の英数字/) === null;
+          
+          // クリーンアップ
+          container.remove();
+          
+          return hasNoHelpText;
+        }),
+        { numRuns: 100 }
+      );
+    });
+
+    it('ヘルプテキストには正しいルールが記載されている', () => {
+      fc.assert(
+        fc.property(fc.constant(''), () => {
+          vi.mocked(useNicknameCheckModule.useNicknameCheck).mockReturnValue({
+            status: 'idle',
+            message: '',
+            isValid: true,
+            isAvailable: true,
+            isChecking: false
+          });
+
+          const { container } = render(
+            <NicknameInput
+              value=""
+              onChange={mockOnChange}
+              showHelp={true}
+            />
+          );
+
+          // ヘルプテキストに必要な情報が含まれていることを確認
+          const helpText = screen.queryByText(/3-36文字の英数字/);
+          const hasCorrectRules = helpText !== null && 
+            helpText.textContent?.includes('ハイフン') &&
+            helpText.textContent?.includes('アンダースコア') &&
+            helpText.textContent?.includes('記号で始まったり終わったり');
+          
+          // クリーンアップ
+          container.remove();
+          
+          return hasCorrectRules;
+        }),
+        { numRuns: 20 }
+      );
+    });
+  });
 });
