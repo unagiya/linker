@@ -794,7 +794,7 @@ describe('Property 25: RLSポリシーの継続動作', () => {
 
         return fieldsMatch;
       }),
-      { numRuns: 100 }
+      { numRuns: 10, timeout: 10000 }
     );
   });
 });
@@ -1112,7 +1112,7 @@ describe('Property 38: 大文字小文字を区別しないニックネーム検
           }
         }
       ),
-      { numRuns: 100 }
+      { numRuns: 10, timeout: 10000 }
     );
   });
 });

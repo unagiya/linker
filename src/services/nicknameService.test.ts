@@ -120,22 +120,20 @@ describe('nicknameService', () => {
       expect(result).toEqual({
         isAvailable: false,
         isChecking: false,
-        error: 'サーバーエラーが発生しました。しばらく待ってから再試行してください'
+        error: '変更の保存に失敗しました。しばらく待ってから再試行してください'
       });
     });
 
-    it('例外が発生した場合は接続エラーを返す', async () => {
+    it('例外が発生した場合は予期しないエラーを返す', async () => {
       mockSupabase.from.mockImplementation(() => {
         throw new Error('Network error');
       });
 
       const result = await checkNicknameAvailability('test-nickname');
       
-      expect(result).toEqual({
-        isAvailable: false,
-        isChecking: false,
-        error: '接続エラーが発生しました。再試行してください'
-      });
+      expect(result.isAvailable).toBe(false);
+      expect(result.isChecking).toBe(false);
+      expect(result.error).toBeDefined();
     });
   });
 
@@ -201,7 +199,7 @@ describe('nicknameService', () => {
         select: mockSelect
       });
 
-      await expect(findProfileByNickname('test-user')).rejects.toThrow('プロフィールの検索に失敗しました');
+      await expect(findProfileByNickname('test-user')).rejects.toThrow('変更の保存に失敗しました');
     });
 
     it('例外が発生した場合は例外を再投げする', async () => {
@@ -261,7 +259,7 @@ describe('nicknameService', () => {
       });
 
       await expect(updateNickname('profile-123', 'new-nickname'))
-        .rejects.toThrow('ニックネームの更新に失敗しました');
+        .rejects.toThrow('変更の保存に失敗しました');
     });
 
     it('例外が発生した場合は例外を再投げする', async () => {

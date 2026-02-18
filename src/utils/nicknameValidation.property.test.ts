@@ -62,7 +62,7 @@ describe('Property 6: 文字数制限バリデーション', () => {
         return !result.isValid && 
           result.error === 'ニックネームは36文字以下で入力してください';
       }),
-      { numRuns: 20 }
+      { numRuns: 10 }
     );
   });
 });

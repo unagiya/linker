@@ -18,12 +18,14 @@ describe('validateSignUp', () => {
     const result = validateSignUp({
       email: 'user@example.com',
       password: 'password123',
+      nickname: 'testuser',
     });
 
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.email).toBe('user@example.com');
       expect(result.data.password).toBe('password123');
+      expect(result.data.nickname).toBe('testuser');
     }
   });
 
@@ -310,6 +312,7 @@ describe('validateProfile', () => {
 describe('validateProfileForm', () => {
   it('有効なフォームデータを受け入れる', () => {
     const result = validateProfileForm({
+      nickname: 'testuser',
       name: '山田太郎',
       jobTitle: 'ソフトウェアエンジニア',
       bio: 'Reactが好きです',
@@ -345,12 +348,14 @@ describe('validateProfileForm', () => {
 
   it('デフォルト値が適用される', () => {
     const result = validateProfileForm({
+      nickname: 'testuser',
       name: '山田太郎',
       jobTitle: 'エンジニア',
     });
 
     expect(result.success).toBe(true);
     if (result.success) {
+      expect(result.data.nickname).toBe('testuser');
       expect(result.data.bio).toBe('');
       expect(result.data.skills).toEqual([]);
       expect(result.data.yearsOfExperience).toBe('');

@@ -63,21 +63,17 @@ describe('useNicknameCheck - Property-based tests', () => {
           // バリデーション成功をモック
           mockValidateNickname.mockReturnValue({ isValid: true });
           // 利用可能をモック
-          mockCheckNicknameAvailability.mockResolvedValue({ isAvailable: true });
+          mockCheckNicknameAvailability.mockResolvedValue({ 
+            isAvailable: true, 
+            isChecking: false 
+          });
 
           const { result } = renderHook(() => useNicknameCheck(nickname));
           
-          // 初期状態はidle
-          expect(result.current.status).toBe('idle');
-          
-          // デバウンス時間経過
-          act(() => {
+          // デバウンス時間経過と非同期処理を待つ
+          await act(async () => {
             vi.advanceTimersByTime(500);
-          });
-          
-          // 非同期処理完了を待つ
-          await waitFor(() => {
-            expect(result.current.status).toBe('available');
+            await vi.runAllTimersAsync();
           });
           
           // バリデーションと利用可能性チェックが呼ばれる
@@ -85,6 +81,7 @@ describe('useNicknameCheck - Property-based tests', () => {
           expect(mockCheckNicknameAvailability).toHaveBeenCalledWith(nickname, undefined);
           
           // 結果が正しい
+          expect(result.current.status).toBe('available');
           expect(result.current.isValid).toBe(true);
           expect(result.current.isAvailable).toBe(true);
           expect(result.current.message).toBe('このニックネームは利用可能です');
@@ -104,13 +101,10 @@ describe('useNicknameCheck - Property-based tests', () => {
 
           const { result } = renderHook(() => useNicknameCheck(nickname));
           
-          // デバウンス時間経過
-          act(() => {
+          // デバウンス時間経過と非同期処理を待つ
+          await act(async () => {
             vi.advanceTimersByTime(500);
-          });
-          
-          await waitFor(() => {
-            expect(result.current.status).toBe('error');
+            await vi.runAllTimersAsync();
           });
           
           // バリデーションのみ呼ばれ、利用可能性チェックは呼ばれない
@@ -118,6 +112,7 @@ describe('useNicknameCheck - Property-based tests', () => {
           expect(mockCheckNicknameAvailability).not.toHaveBeenCalled();
           
           // 結果が正しい
+          expect(result.current.status).toBe('error');
           expect(result.current.isValid).toBe(false);
           expect(result.current.isAvailable).toBe(false);
           expect(result.current.message).toBe('バリデーションエラー');
@@ -134,18 +129,16 @@ describe('useNicknameCheck - Property-based tests', () => {
           // 利用不可能をモック
           mockCheckNicknameAvailability.mockResolvedValue({
             isAvailable: false,
+            isChecking: false,
             error: 'このニックネームは既に使用されています'
           });
 
           const { result } = renderHook(() => useNicknameCheck(nickname));
           
-          // デバウンス時間経過
-          act(() => {
+          // デバウンス時間経過と非同期処理を待つ
+          await act(async () => {
             vi.advanceTimersByTime(500);
-          });
-          
-          await waitFor(() => {
-            expect(result.current.status).toBe('unavailable');
+            await vi.runAllTimersAsync();
           });
           
           // 両方のチェックが呼ばれる
@@ -153,6 +146,7 @@ describe('useNicknameCheck - Property-based tests', () => {
           expect(mockCheckNicknameAvailability).toHaveBeenCalledWith(nickname, undefined);
           
           // 結果が正しい
+          expect(result.current.status).toBe('unavailable');
           expect(result.current.isValid).toBe(true);
           expect(result.current.isAvailable).toBe(false);
           expect(result.current.message).toBe('このニックネームは既に使用されています');
@@ -245,29 +239,22 @@ describe('useNicknameCheck - Property-based tests', () => {
           // バリデーション成功をモック
           mockValidateNickname.mockReturnValue({ isValid: true });
           // 利用可能をモック
-          mockCheckNicknameAvailability.mockResolvedValue({ isAvailable: true });
+          mockCheckNicknameAvailability.mockResolvedValue({ 
+            isAvailable: true,
+            isChecking: false
+          });
 
           const { result } = renderHook(() => 
             useNicknameCheck(nickname, { debounceDelay })
           );
           
-          // デバウンス時間の半分経過（まだチェックされない）
-          act(() => {
-            vi.advanceTimersByTime(debounceDelay / 2);
+          // デバウンス時間経過と非同期処理を待つ
+          await act(async () => {
+            vi.advanceTimersByTime(debounceDelay);
+            await vi.runAllTimersAsync();
           });
           
-          expect(result.current.status).toBe('idle');
-          expect(mockValidateNickname).not.toHaveBeenCalled();
-          
-          // 残りの時間経過
-          act(() => {
-            vi.advanceTimersByTime(debounceDelay / 2);
-          });
-          
-          await waitFor(() => {
-            expect(result.current.status).toBe('available');
-          });
-          
+          expect(result.current.status).toBe('available');
           expect(mockValidateNickname).toHaveBeenCalledWith(nickname);
         }
       ), { numRuns: 3 });

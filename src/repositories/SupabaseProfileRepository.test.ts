@@ -11,6 +11,7 @@ import type { Profile } from '../types/profile';
 vi.mock('../lib/supabase', () => ({
   supabase: {
     from: vi.fn(),
+    rpc: vi.fn(),
   },
 }));
 
@@ -84,25 +85,29 @@ describe('SupabaseProfileRepository', () => {
     });
 
     (supabase.from as Mock) = mockFrom;
+    (supabase.rpc as Mock) = vi.fn().mockResolvedValue({ data: null, error: null });
   });
 
   describe('findByNickname', () => {
     it('ニックネームでプロフィールを検索できる', async () => {
-      // 大文字小文字を区別しない検索のテスト
-      mockSingle.mockResolvedValue({ data: mockProfileRow, error: null });
+      // RPCを使用した大文字小文字を区別しない検索のテスト
+      (supabase.rpc as Mock).mockResolvedValue({ 
+        data: [mockProfileRow], 
+        error: null 
+      });
 
       const result = await repository.findByNickname('TestUser');
 
-      expect(mockFrom).toHaveBeenCalledWith('profiles');
-      expect(mockSelect).toHaveBeenCalledWith('*');
-      expect(mockIlike).toHaveBeenCalledWith('nickname', 'TestUser');
+      expect(supabase.rpc).toHaveBeenCalledWith('search_profiles_by_nickname', {
+        search_nickname: 'TestUser'
+      });
       expect(result).toEqual(mockProfile);
     });
 
     it('存在しないニックネームの場合nullを返す', async () => {
-      mockSingle.mockResolvedValue({ 
-        data: null, 
-        error: { code: 'PGRST116', message: 'No rows found' } 
+      (supabase.rpc as Mock).mockResolvedValue({ 
+        data: [], 
+        error: null 
       });
 
       const result = await repository.findByNickname('nonexistent');
@@ -111,9 +116,9 @@ describe('SupabaseProfileRepository', () => {
     });
 
     it('データベースエラーの場合エラーを投げる', async () => {
-      mockSingle.mockResolvedValue({ 
+      (supabase.rpc as Mock).mockResolvedValue({ 
         data: null, 
-        error: { code: 'OTHER_ERROR', message: 'Database error' } 
+        error: { message: 'Database error' } 
       });
 
       await expect(repository.findByNickname('testuser')).rejects.toThrow(
